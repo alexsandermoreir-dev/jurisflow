@@ -1,0 +1,2334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JurisFlow — Gestão para Advocacia</title>
+<style>
+:root{
+  --accent:#5b5bd6; --accent-soft:#eeeefc; --accent-dark:#4747b8;
+  --bg:#f6f7fb; --card:#ffffff; --border:#e5e7ee; --text:#2b2d3a; --muted:#7a7f93;
+  --green:#2e9e6b; --red:#d64545; --amber:#d69a2e;
+  --blue-pastel:#aecbeb; --gray-pastel:#c9ccd4; --yellow-pastel:#f2dfa0; --red-pastel:#e89a9a;
+  --radius:12px; --shadow:0 1px 3px rgba(20,22,40,.07),0 4px 14px rgba(20,22,40,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:13.5px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+textarea{resize:vertical;min-height:70px}
+label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em}
+.field{margin-bottom:12px}
+a{color:var(--accent)}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#cfd2dd;border-radius:5px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- Layout ---------- */
+#app{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:225px;min-width:225px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:20}
+#sidebar .brand{display:flex;align-items:center;gap:9px;padding:16px 18px;border-bottom:1px solid var(--border)}
+#sidebar .brand .logo-sq{width:30px;height:30px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;overflow:hidden}
+#sidebar .brand .logo-sq img{width:100%;height:100%;object-fit:cover}
+#sidebar .brand b{font-size:16px;letter-spacing:-.02em}
+#sidebar nav{flex:1;overflow-y:auto;padding:10px 8px}
+.navitem{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border:none;background:none;border-radius:9px;color:var(--muted);font-size:13.5px;font-weight:600;text-align:left;margin-bottom:2px}
+.navitem svg{width:17px;height:17px;flex-shrink:0}
+.navitem:hover{background:var(--bg);color:var(--text)}
+.navitem.active{background:var(--accent-soft);color:var(--accent-dark)}
+#sidebar .foot{padding:12px 16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--muted)}
+/* ---------- Voice Sidebar ---------- */
+#voice-sidebar{border-top:1px solid var(--border);padding:4px 0;max-height:45%;overflow-y:auto}
+.vs-section-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:5px 14px 3px}
+.vs-room-item{display:flex;align-items:center;gap:7px;padding:4px 8px;border-radius:7px;margin:1px 5px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--muted)}
+.vs-room-item:hover{background:var(--bg);color:var(--text)}
+.vs-room-item.connected{background:var(--accent-soft);color:var(--accent-dark)}
+.vs-room-emoji{font-size:13px;width:18px;text-align:center;flex-shrink:0}
+.vs-room-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.vs-room-count{font-size:10.5px;color:var(--muted);flex-shrink:0}
+.vs-participants{padding:1px 12px 3px 28px}
+.vs-participant{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);padding:1px 0}
+.vs-controls{display:flex;align-items:center;gap:3px;padding:5px 8px 5px;border-top:1px solid var(--border);margin-top:2px;background:#fafbff}
+.vs-ctrl-room{flex:1;font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vs-ctrl-btn{width:26px;height:26px;border:none;border-radius:6px;background:var(--bg);font-size:13px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.vs-ctrl-btn:hover{background:var(--border)}
+.vs-ctrl-btn.off{background:#fee2e2}
+.vs-offline{font-size:11px;color:var(--muted);padding:6px 12px 8px;text-align:center;line-height:1.55}
+/* ---------- Week Kanban ---------- */
+.week-board{display:grid;gap:8px;padding:12px}
+.day-col{background:var(--bg);border-radius:10px;padding:8px;min-height:170px;display:flex;flex-direction:column;gap:6px;position:relative}
+.day-col.dragover{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft)}
+.day-col.today{background:var(--accent-soft)}
+.day-lbl{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:4px 3px 2px;border-bottom:2px solid var(--border);margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.day-col.today .day-lbl{color:var(--accent-dark);border-color:var(--accent)}
+.day-num{font-size:13px;font-weight:600;color:var(--muted)}
+.day-col.today .day-num{color:var(--accent-dark)}
+/* ---------- Task Kanban ---------- */
+.kanban-wrap{display:flex;gap:10px;overflow-x:auto;padding:4px 0 10px;min-height:400px;align-items:flex-start}
+.k-col{background:var(--bg);border-radius:12px;min-width:210px;flex:1;display:flex;flex-direction:column;max-height:calc(100vh - 200px)}
+.k-col-h{padding:10px 12px 8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--border)}
+.k-col-body{padding:8px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.k-col.dragover-col>.k-col-h{border-color:var(--accent)}
+.k-card{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:8px 10px;font-size:12.5px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.k-card:hover{box-shadow:var(--shadow)}
+.k-card.prazo{border-left-color:var(--red)}
+.k-card.done{opacity:.5;text-decoration:line-through}
+/* ---------- Task Detail ---------- */
+.td-meta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.td-meta-item{flex:none}
+.td-meta-item label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:2px}
+.task-timer{text-align:center;background:var(--bg);border-radius:10px;padding:14px 10px;margin:10px 0}
+.task-timer .tt-time{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.task-timer .tt-total{font-size:11.5px;color:var(--muted);margin-top:2px}
+.time-entry-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px}
+/* ---------- Process Timeline ---------- */
+.proc-timeline{display:flex;flex-direction:column;gap:0}
+.proc-row{display:flex;gap:14px;align-items:flex-start}
+.proc-main{flex:1;border:1px solid var(--border);border-radius:12px;background:var(--card);box-shadow:var(--shadow);overflow:hidden}
+.proc-main.suspenso{border:2px solid #f97316;box-shadow:0 0 0 3px rgba(249,115,22,.12)}
+.suspenso-tag{background:#f97316;color:#fff;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:4px;letter-spacing:.07em;vertical-align:middle;margin-left:6px}
+.proc-incidentals{display:flex;flex-direction:column;gap:8px;min-width:240px;max-width:260px}
+.proc-incident-card{border:1px solid var(--border);border-radius:10px;background:var(--card);box-shadow:var(--shadow);overflow:hidden;position:relative}
+.proc-incident-card::before{content:'';position:absolute;top:50%;left:-14px;width:14px;height:2px;background:var(--border)}
+.proc-linear-section{display:flex;flex-direction:column;gap:0}
+.proc-v-connector{width:2px;height:24px;background:linear-gradient(var(--border),var(--border));margin:0 24px}
+.proc-linear-card{border:1px solid var(--border);border-radius:10px;background:var(--card);box-shadow:var(--shadow);overflow:hidden}
+.proc-card-h{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);font-weight:700;font-size:13px}
+.proc-card-h .sp{flex:1}
+.proc-movs{max-height:260px;overflow-y:auto}
+.pmov{padding:9px 14px;border-bottom:1px solid var(--border);position:relative;display:flex;gap:10px;align-items:flex-start}
+.pmov:last-child{border-bottom:none}
+.pmov-label{width:4px;flex-shrink:0;border-radius:2px;align-self:stretch;min-height:12px}
+.pmov-body{flex:1;min-width:0}
+.pmov-head{display:flex;align-items:baseline;gap:6px}
+.pmov-tipo{font-size:12.5px;font-weight:700;flex:1}
+.pmov-date{font-size:11px;color:var(--muted);flex-shrink:0}
+.pmov-desc{font-size:12px;color:var(--muted);margin-top:2px;white-space:pre-wrap;word-break:break-word}
+.pmov-acts{display:flex;gap:3px;flex-shrink:0}
+.pmov-docs{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.doc-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--accent-soft);color:var(--accent-dark);border-radius:6px;font-size:11px;border:none;cursor:pointer;font-family:inherit}
+/* ---------- Process Calendar ---------- */
+.proc-cal{margin-top:4px}
+/* ---------- Settings additions ---------- */
+.mov-color-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)}
+.mov-color-row:last-child{border-bottom:none}
+.status-tag-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)}
+.status-tag-row:last-child{border-bottom:none}
+#main{flex:1;overflow-y:auto;position:relative}
+#topbar{position:sticky;top:0;background:rgba(246,247,251,.92);backdrop-filter:blur(6px);z-index:15;display:flex;align-items:center;gap:14px;padding:12px 26px;border-bottom:1px solid var(--border)}
+#topbar h1{font-size:19px;letter-spacing:-.02em;flex:1}
+#searchbox{max-width:320px;position:relative}
+#searchbox input{padding-left:32px;border-radius:20px}
+#searchbox svg{position:absolute;left:11px;top:9px;width:15px;height:15px;color:var(--muted)}
+#view{padding:22px 26px 60px}
+
+/* ---------- Cards / genéricos ---------- */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card .card-h{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border);font-weight:700;font-size:13.5px}
+.card .card-h .sp{flex:1}
+.card .card-b{padding:14px 16px}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:9px;border:1px solid var(--border);background:#fff;font-weight:600;font-size:13px;color:var(--text)}
+.btn:hover{background:var(--bg)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-dark)}
+.btn.danger{color:var(--red)}
+.btn.small{padding:4px 10px;font-size:12px;border-radius:7px}
+.btn.icon{padding:6px 8px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;color:#fff}
+.chip .x{cursor:pointer;opacity:.75;font-weight:900}
+.muted{color:var(--muted)}
+.empty{color:var(--muted);font-size:13px;padding:14px;text-align:center}
+.row{display:flex;gap:10px;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px}
+table.tbl{width:100%;border-collapse:collapse}
+table.tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:left;padding:8px 12px;border-bottom:1px solid var(--border)}
+table.tbl td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13.5px;vertical-align:middle}
+table.tbl tr.click{cursor:pointer}
+table.tbl tr.click:hover td{background:#fafbff}
+
+/* ---------- Dashboard ---------- */
+#cover{height:150px;border-radius:var(--radius);background:linear-gradient(120deg,#5b5bd6,#8b6fd8 60%,#b3a1e6);position:relative;overflow:hidden;margin-bottom:18px;box-shadow:var(--shadow)}
+#cover img.coverimg{width:100%;height:100%;object-fit:cover}
+#cover .cover-inner{position:absolute;left:24px;bottom:16px;display:flex;align-items:center;gap:14px}
+#cover .office-logo{width:64px;height:64px;border-radius:14px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:26px;color:var(--accent);overflow:hidden}
+#cover .office-logo img{width:100%;height:100%;object-fit:contain}
+#cover .office-name{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35)}
+#cover .office-name b{font-size:20px;display:block}
+#cover .office-name span{font-size:12.5px;opacity:.9}
+#cover .cover-edit{position:absolute;right:12px;top:12px;background:rgba(255,255,255,.85);border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600}
+.dash-grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+.task-card{background:#fff;border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:8px;padding:7px 8px;font-size:12px;cursor:grab;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.task-card:active{cursor:grabbing}
+.task-card.done{opacity:.55;text-decoration:line-through}
+.task-card.prazo{border-left-color:var(--red)}
+.task-card .t-meta{font-size:10.5px;color:var(--muted);margin-top:3px}
+.task-card .t-check{float:right;margin-left:5px}
+.prazo-item{display:flex;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border);align-items:center;cursor:pointer}
+.prazo-item:last-child{border-bottom:none}
+.prazo-item .p-days{min-width:52px;text-align:center;border-radius:8px;padding:5px 3px;font-weight:800;font-size:12px}
+.prazo-item .p-days small{display:block;font-weight:600;font-size:9.5px}
+.prazo-item .p-tit{font-size:12.5px;font-weight:600;flex:1}
+.prazo-item .p-sub{font-size:11px;color:var(--muted)}
+
+/* mini calendário */
+.mini-cal{width:100%}
+.mini-cal .mc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:700;font-size:13px}
+.mini-cal .mc-head button{border:none;background:none;font-size:15px;color:var(--muted);padding:2px 8px}
+.mini-cal table{width:100%;border-collapse:collapse;text-align:center}
+.mini-cal th{font-size:10px;color:var(--muted);padding:3px 0;font-weight:700}
+.mini-cal td{font-size:12px;padding:0}
+.mini-cal td span{display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;position:relative}
+.mini-cal td span:hover{background:var(--bg)}
+.mini-cal td span.today{background:var(--accent);color:#fff;font-weight:700}
+.mini-cal td span.hastask::after{content:'';position:absolute;bottom:2px;width:4px;height:4px;border-radius:50%;background:var(--accent)}
+.mini-cal td span.today.hastask::after{background:#fff}
+
+/* pomodoro */
+#pomo-wrap{text-align:center}
+#pomo-visual{height:150px;display:flex;align-items:center;justify-content:center;margin:4px 0}
+#pomo-time{font-size:30px;font-weight:800;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+#pomo-phase{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+#pomo-phase.work{color:var(--red)}
+#pomo-phase.break{color:var(--green)}
+.pomo-btns{display:flex;gap:8px;justify-content:center;margin-top:8px}
+.skin-picker{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.skin-picker button{border:1px solid var(--border);background:#fff;border-radius:8px;padding:4px 9px;font-size:15px}
+.skin-picker button.active{border-color:var(--accent);background:var(--accent-soft)}
+
+/* barra do dia */
+#daybar-wrap{margin-top:14px}
+#daybar{height:16px;border-radius:9px;overflow:hidden;display:flex;position:relative;border:1px solid var(--border)}
+#daybar .seg{height:100%}
+#daybar-marker{position:absolute;top:-4px;width:2.5px;height:24px;background:var(--text);border-radius:2px;box-shadow:0 0 4px rgba(0,0,0,.4)}
+#daybar-info{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:5px}
+
+/* ---------- Modal ---------- */
+#modal-root{position:fixed;inset:0;background:rgba(25,27,45,.45);display:none;align-items:flex-start;justify-content:center;z-index:100;overflow-y:auto;padding:40px 16px}
+#modal-root.open{display:flex}
+.modal{background:#fff;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.25);width:100%;max-width:560px;animation:pop .18s ease}
+.modal.wide{max-width:760px}
+@keyframes pop{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+.modal .m-head{display:flex;align-items:center;padding:15px 20px;border-bottom:1px solid var(--border);font-weight:700;font-size:15px}
+.modal .m-head .sp{flex:1}
+.modal .m-head .close{border:none;background:none;font-size:20px;color:var(--muted);padding:2px 6px}
+.modal .m-body{padding:18px 20px;max-height:70vh;overflow-y:auto}
+.modal .m-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--border)}
+
+/* ---------- Processos / detalhe ---------- */
+.detail-head{display:flex;align-items:flex-start;gap:16px;margin-bottom:18px}
+.detail-head .dh-main{flex:1}
+.detail-head h2{font-size:19px;letter-spacing:-.02em;margin-bottom:3px}
+.back{border:none;background:none;color:var(--accent);font-weight:700;font-size:13px;padding:0;margin-bottom:10px;display:inline-flex;align-items:center;gap:5px}
+.mov{border-left:3px solid var(--accent);padding:8px 12px;margin:0 0 10px 6px;background:#fff;border-radius:0 9px 9px 0;border-top:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.mov .mov-h{display:flex;gap:8px;align-items:baseline}
+.mov .mov-h b{font-size:13.5px}
+.mov .mov-h .mov-date{font-size:11.5px;color:var(--muted);font-weight:600}
+.mov .mov-desc{font-size:13px;color:#4a4e61;margin-top:3px;white-space:pre-wrap}
+.mov .mov-acts{float:right}
+.desdobra{border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.desdobra>.d-h{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg);font-weight:700;font-size:13px;cursor:pointer}
+.desdobra>.d-b{padding:12px 14px}
+.tag-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.folder{border:1px solid var(--border);border-radius:10px;margin-bottom:10px}
+.folder .f-h{display:flex;align-items:center;gap:8px;padding:9px 13px;font-weight:700;font-size:13px;cursor:pointer;background:var(--bg);border-radius:10px 10px 0 0}
+.folder .f-b{padding:8px 13px}
+.file-item{display:flex;align-items:center;gap:9px;padding:6px 4px;font-size:13px;border-bottom:1px dashed var(--border)}
+.file-item:last-child{border-bottom:none}
+.avatar{width:38px;height:38px;border-radius:10px;background:var(--accent-soft);color:var(--accent-dark);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px;overflow:hidden;flex-shrink:0}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px;flex-wrap:wrap}
+.tabs button{border:none;background:none;padding:9px 14px;font-weight:700;font-size:13px;color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-1px}
+.tabs button.active{color:var(--accent-dark);border-bottom-color:var(--accent)}
+.hist-item{padding:10px 12px;border:1px solid var(--border);border-radius:10px;margin-bottom:9px}
+.hist-item b{font-size:13.5px}
+.hist-item .h-date{font-size:11.5px;color:var(--muted);float:right}
+.hist-item p{font-size:13px;color:#4a4e61;margin-top:4px;white-space:pre-wrap}
+
+/* ---------- Agenda mensal ---------- */
+.month-grid{display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid var(--border);border-top:1px solid var(--border)}
+.month-grid .mg-h{padding:8px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg);text-align:center}
+.mg-cell{min-height:105px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:5px;background:#fff}
+.mg-cell.other{background:#fafafc}
+.mg-cell .n{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
+.mg-cell.todaycell .n{color:#fff;background:var(--accent);display:inline-flex;width:22px;height:22px;border-radius:50%;align-items:center;justify-content:center}
+.mg-task{font-size:11px;background:var(--accent-soft);color:var(--accent-dark);border-radius:5px;padding:2px 6px;margin-bottom:3px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.mg-task.prazo{background:#fbe4e4;color:#a83232}
+.mg-task.done{opacity:.5;text-decoration:line-through}
+
+/* ---------- Salas de voz ---------- */
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:12.5px;font-weight:700;cursor:pointer;border:1.5px solid transparent;transition:background .15s}
+.status-pill.online{background:#def0e6;color:#1a7a4a;border-color:#a3d9bc}
+.status-pill.busy{background:#fbe4e4;color:#a83232;border-color:#f0b8b8}
+.status-pill.lunch{background:#faf0d7;color:#8a620a;border-color:#e8d090}
+.status-pill.away{background:#f0f0f4;color:#7a7f93;border-color:#d0d3de}
+.room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px;margin-top:4px}
+.room-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.room-card .rc-top{padding:20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border)}
+.room-card .rc-emoji{font-size:32px;line-height:1}
+.room-card .rc-info{flex:1}
+.room-card .rc-info b{font-size:16px;display:block}
+.room-card .rc-info small{color:var(--muted);font-size:12px}
+.room-card .rc-body{padding:12px 16px;flex:1;min-height:70px}
+.room-card .rc-foot{padding:10px 16px;display:flex;gap:8px;border-top:1px solid var(--border);background:var(--bg)}
+.status-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;align-items:center}
+.jitsi-note{background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;padding:12px 16px;font-size:12.5px;color:var(--accent-dark);margin-bottom:18px}
+
+/* ---------- Impressão ---------- */
+#print-root{display:none}
+@media print{
+  body>#app,#modal-root{display:none!important}
+  #print-root{display:block!important;padding:30px;font-size:12.5px}
+  #print-root .p-head{display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #5b5bd6;padding-bottom:14px;margin-bottom:18px}
+  #print-root .p-head img{max-height:60px;max-width:170px;object-fit:contain}
+  #print-root h1{font-size:19px}
+  #print-root h2{font-size:15px;margin:16px 0 8px;border-bottom:1px solid #ccc;padding-bottom:4px}
+  #print-root table{width:100%;border-collapse:collapse;margin-bottom:10px}
+  #print-root td,#print-root th{border:1px solid #ddd;padding:6px 9px;text-align:left;font-size:12px}
+  #print-root .pmov{border-left:3px solid #5b5bd6;padding:6px 10px;margin-bottom:8px;page-break-inside:avoid}
+  #print-root .pmov .d{color:#666;font-size:11px}
+  #print-root .pfoot{margin-top:26px;font-size:10.5px;color:#888;text-align:center;border-top:1px solid #ddd;padding-top:8px}
+}
+
+@media (max-width:1100px){.dash-grid{grid-template-columns:1fr}.grid3{grid-template-columns:1fr}}
+@media (max-width:800px){#sidebar{position:fixed;left:-230px;height:100%;transition:left .2s}#sidebar.open{left:0}.week-board{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+
+/* ---------- Toast ---------- */
+#toast-root{position:fixed;bottom:22px;right:22px;z-index:200;display:flex;flex-direction:column;gap:9px;pointer-events:none}
+.toast{background:#2b2d3a;color:#fff;padding:11px 17px;border-radius:10px;font-size:13.5px;font-weight:600;box-shadow:0 4px 18px rgba(0,0,0,.25);display:flex;align-items:center;gap:9px;animation:toastin .2s ease;pointer-events:auto;max-width:360px}
+.toast.success{background:var(--green)}.toast.warn{background:var(--amber)}.toast.error{background:var(--red)}
+@keyframes toastin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.spin{display:inline-block;animation:spin .8s linear infinite;font-style:normal}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand"><div class="logo-sq" id="brand-logo">J</div><b id="brand-name">JurisFlow</b></div>
+    <nav id="nav"></nav>
+    <div id="voice-sidebar"></div>
+    <div class="foot" id="side-foot">Dados salvos neste navegador.<br>Faça backups em Configurações.</div>
+  </aside>
+  <div id="main">
+    <div id="topbar">
+      <h1 id="page-title">Dashboard</h1>
+      <div id="searchbox">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="global-search" placeholder="Pesquisar cliente, processo ou tarefa" autocomplete="off">
+      </div>
+      <div id="topbar-status" onclick="nav('rooms')" title="Seu status — clique para ir às Salas"></div>
+      <button class="btn primary" id="quick-add">+ Novo</button>
+    </div>
+    <div id="view"></div>
+  </div>
+</div>
+<div id="modal-root"></div>
+<div id="print-root"></div>
+<div id="toast-root"></div>
+<script>
+'use strict';
+if(typeof structuredClone==='undefined'){window.structuredClone=o=>JSON.parse(JSON.stringify(o));}
+/* =====================================================
+   JurisFlow — sistema de gestão para advocacia
+   Arquivo único. Dados no navegador (localStorage + IndexedDB p/ arquivos)
+   ===================================================== */
+
+/* ---------- Persistência ---------- */
+const DB_KEY='jurisflow_v1';
+const DEFAULT_DATA={
+  settings:{
+    officeName:'Meu Escritório', officeSub:'Advocacia', logo:null, cover:null,
+    userName:'', userEmail:'',
+    workStart:'08:00', lunchStart:'12:00', lunchEnd:'13:00', workEnd:'17:00',
+    pomoWork:25, pomoBreak:5, pomoSkin:'tomato',
+    showWeekend:false,
+    taskStatuses:['A Fazer','Em Andamento','Aguardando','Concluído'],
+    movColors:{'Sentença':'#e53935','Trânsito em Julgado':'#5b5bd6','Liminar':'#f97316','Acordo':'#2e9e6b'}
+  },
+  clients:[], processes:[], tasks:[],
+  tags:[
+    {id:'tg1',name:'Tributário',color:'#5b5bd6'},
+    {id:'tg2',name:'Trabalhista',color:'#2e9e6b'},
+    {id:'tg3',name:'Cível',color:'#d69a2e'},
+    {id:'tg4',name:'Empresarial',color:'#d64545'}
+  ],
+  rooms:[
+    {id:'r1',name:'Geral',emoji:'💬',desc:'Sala principal do escritório'},
+    {id:'r2',name:'Tributário',emoji:'🏛️',desc:'Setor tributário'},
+    {id:'r3',name:'Trabalhista',emoji:'⚖️',desc:'Setor trabalhista'},
+    {id:'r4',name:'Cível',emoji:'📋',desc:'Setor cível'},
+  ],
+  myStatus:{code:'online',label:'Online',since:null},
+  movTypes:['Distribuição','Citação','Contestação','Réplica','Despacho','Decisão','Liminar','Sentença','Recurso','Intimação','Publicação','Audiência','Trânsito em Julgado','Penhora','Acordo'],
+  procTypes:['Ação Ordinária','Ação Anulatória','Ação de Cobrança','Ação de Repetição de Indébito','Mandado de Segurança','Execução Fiscal','Reclamação Trabalhista','Cumprimento de Sentença']
+};
+let DATA=load();
+function load(){
+  try{const raw=localStorage.getItem(DB_KEY);if(!raw)return structuredClone(DEFAULT_DATA);
+    const d=JSON.parse(raw);
+    for(const k in DEFAULT_DATA){if(d[k]===undefined)d[k]=structuredClone(DEFAULT_DATA[k]);}
+    for(const k in DEFAULT_DATA.settings){if(d.settings[k]===undefined)d.settings[k]=DEFAULT_DATA.settings[k];}
+    return d;
+  }catch(e){console.error(e);return structuredClone(DEFAULT_DATA);}
+}
+function save(){try{localStorage.setItem(DB_KEY,JSON.stringify(DATA));}catch(e){alert('Erro ao salvar. O armazenamento pode estar cheio. Faça um backup e remova arquivos grandes.');}}
+const uid=()=> 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const API_BASE='http://localhost:3000';
+
+/* ── Estado das Salas de Voz (WebRTC) ─────────────────────────────────── */
+let voiceSocket=null, voicePeers={}, localStream=null, connectedRoomId=null, micOn=true, audioOn=true, roomsInfo={};
+const STUN_SERVERS=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
+
+/* IndexedDB para arquivos de clientes */
+let idb=null;
+const idbReady=new Promise(res=>{
+  const rq=indexedDB.open('jurisflow_files',1);
+  rq.onupgradeneeded=e=>{e.target.result.createObjectStore('files',{keyPath:'id'});};
+  rq.onsuccess=e=>{idb=e.target.result;res();};
+  rq.onerror=()=>res();
+});
+function fileAdd(rec){return new Promise((res,rej)=>{const tx=idb.transaction('files','readwrite');tx.objectStore('files').put(rec);tx.oncomplete=res;tx.onerror=rej;});}
+function fileGet(id){return new Promise(res=>{const rq=idb.transaction('files').objectStore('files').get(id);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>res(null);});}
+function fileDel(id){return new Promise(res=>{const tx=idb.transaction('files','readwrite');tx.objectStore('files').delete(id);tx.oncomplete=res;});}
+
+/* ---------- Utilidades ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>(s??'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const WEEKDAYS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const WEEKDAYS_FULL=['DOMINGO','SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO'];
+const MONTHS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function todayStr(){const d=new Date();return dstr(d);}
+function dstr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function parseD(s){const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c);}
+function fmtD(s){if(!s)return'';const[a,b,c]=s.split('-');return c+'/'+b+'/'+a;}
+function daysUntil(s){const t=new Date();t.setHours(0,0,0,0);return Math.round((parseD(s)-t)/86400000);}
+function minOfDay(hhmm){const[h,m]=hhmm.split(':').map(Number);return h*60+m;}
+function initials(name){return (name||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();}
+function readImg(file,maxW,cb){
+  const rd=new FileReader();
+  rd.onload=()=>{const img=new Image();img.onload=()=>{
+    const sc=Math.min(1,maxW/img.width);const cv=document.createElement('canvas');
+    cv.width=img.width*sc;cv.height=img.height*sc;
+    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+    cb(cv.toDataURL('image/jpeg',0.85));
+  };img.src=rd.result;};
+  rd.readAsDataURL(file);
+}
+function maskDoc(v){
+  v=v.replace(/\D/g,'').slice(0,14);
+  if(v.length<=11)return v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  return v.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2');
+}
+function getClient(id){return DATA.clients.find(c=>c.id===id);}
+function getProc(id){return DATA.processes.find(p=>p.id===id);}
+function getTag(id){return DATA.tags.find(t=>t.id===id);}
+function clientLabel(c){return c? (c.fantasia||c.nome) : '';}
+function confirmDel(msg){return confirm(msg||'Tem certeza que deseja excluir?');}
+
+/* ---------- Modal ---------- */
+function openModal(title,bodyHtml,footHtml,wide){
+  const root=$('#modal-root');
+  root.innerHTML=`<div class="modal${wide?' wide':''}">
+    <div class="m-head"><span>${title}</span><span class="sp"></span><button class="close" onclick="closeModal()">✕</button></div>
+    <div class="m-body">${bodyHtml}</div>
+    ${footHtml?`<div class="m-foot">${footHtml}</div>`:''}
+  </div>`;
+  root.classList.add('open');
+}
+function closeModal(){const r=$('#modal-root');r.classList.remove('open');r.innerHTML='';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+$('#modal-root').addEventListener('mousedown',e=>{if(e.target.id==='modal-root')closeModal();});
+
+/* ---------- Navegação ---------- */
+const NAV=[
+  {id:'dash',label:'Dashboard',icon:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>'},
+  {id:'clients',label:'Clientes',icon:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.7-3.7 3.4-6 6.5-6s5.8 2.3 6.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5c2.6.3 4.6 2 5.3 5"/>'},
+  {id:'procs',label:'Processos',icon:'<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/>'},
+  {id:'tasks',label:'Tarefas',icon:'<rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="m8 12.5 2.6 2.6L16.5 9"/>'},
+  {id:'agenda',label:'Agenda',icon:'<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/>'},
+  {id:'rooms',label:'Salas de voz',icon:'<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/>'},
+  {id:'settings',label:'Configurações',icon:'<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9 19 19M19 5l-2.1 2.1M7.1 16.9 5 19"/>'}
+];
+let route={page:'dash',id:null,sub:null};
+function nav(page,id,sub){route={page,id:id||null,sub:sub||null};render();}
+function renderNav(){
+  $('#nav').innerHTML=NAV.map(n=>`<button class="navitem${route.page===n.id||(n.id==='clients'&&route.page==='client')||(n.id==='procs'&&route.page==='proc')?' active':''}" onclick="nav('${n.id}')">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">${n.icon}</svg>${n.label}</button>`).join('');
+}
+function render(){
+  renderNav();renderBrand();renderVoiceSidebar();
+  const v=$('#view');
+  const titles={dash:'Dashboard',clients:'Clientes',procs:'Processos e Casos',tasks:'Tarefas',agenda:'Agenda',rooms:'Salas de voz',settings:'Configurações',client:'Cliente',proc:'Processo'};
+  $('#page-title').textContent=titles[route.page]||'';
+  if(route.page==='dash')renderDash(v);
+  else if(route.page==='clients')renderClients(v);
+  else if(route.page==='client')renderClientDetail(v,route.id);
+  else if(route.page==='procs')renderProcs(v);
+  else if(route.page==='proc')renderProcDetail(v,route.id);
+  else if(route.page==='tasks')renderTasks(v);
+  else if(route.page==='agenda')renderAgenda(v);
+  else if(route.page==='rooms')renderRooms(v);
+  else if(route.page==='settings')renderSettings(v);
+}
+function renderBrand(){
+  const s=DATA.settings;
+  $('#brand-name').textContent=s.officeName||'JurisFlow';
+  $('#brand-logo').innerHTML=s.logo?`<img src="${s.logo}">`:esc((s.officeName||'J')[0].toUpperCase());
+}
+/* =====================================================
+   DASHBOARD
+   ===================================================== */
+let weekOffset=0, miniCalDate=new Date();
+function startOfWeek(d){const x=new Date(d);x.setDate(x.getDate()-x.getDay());x.setHours(0,0,0,0);return x;} // Sunday=0
+function fmtDuration(secs){secs=Math.max(0,Math.floor(secs||0));const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60),s=secs%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
+function toggleWeekend(v){DATA.settings.showWeekend=v;save();renderWeekBoard();}
+
+function renderDash(v){
+  const s=DATA.settings;
+  v.innerHTML=`
+  <div id="cover">
+    ${s.cover?`<img class="coverimg" src="${s.cover}">`:''}
+    <div class="cover-inner">
+      <div class="office-logo">${s.logo?`<img src="${s.logo}">`:esc(initials(s.officeName))}</div>
+      <div class="office-name"><b>${esc(s.officeName)}</b><span>${esc(s.officeSub||'')}</span></div>
+    </div>
+    <button class="cover-edit" onclick="nav('settings')">✎ Editar capa</button>
+  </div>
+  <div class="dash-grid">
+    <div>
+      <div class="card">
+        <div class="card-h">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted);margin:0">
+            <input type="checkbox" id="wk-weekend" style="width:auto;padding:0;border:none;outline:none;background:none;box-shadow:none" ${s.showWeekend?'checked':''} onchange="toggleWeekend(this.checked)">
+            Fins de semana
+          </label>
+          <span class="sp"></span>
+          <span class="muted" style="font-weight:600;font-size:12px" id="week-label"></span>
+          <button class="btn small" onclick="weekOffset--;renderWeekBoard()">‹</button>
+          <button class="btn small" onclick="weekOffset=0;renderWeekBoard()">Hoje</button>
+          <button class="btn small" onclick="weekOffset++;renderWeekBoard()">›</button>
+        </div>
+        <div class="week-board" id="week-board"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:14px">
+        <div class="card">
+          <div class="card-h">📋 Esta semana</div>
+          <div class="card-b" id="week-tasks-box" style="max-height:210px;overflow-y:auto;padding:4px 10px"></div>
+        </div>
+        <div class="card">
+          <div class="card-h">📌 Sem data<span class="sp"></span><button class="btn small primary" onclick="taskForm()">+ Tarefa</button></div>
+          <div class="card-b" id="nodate-tasks" style="max-height:210px;overflow-y:auto"></div>
+        </div>
+        <div class="card">
+          <div class="card-h">⏰ Prazos ativos</div>
+          <div class="card-b" id="prazos-box" style="max-height:210px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-b"><div class="mini-cal" id="mini-cal"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-b" id="pomo-card"></div>
+      </div>
+      <div class="card">
+        <div class="card-b" id="daybar-card"></div>
+      </div>
+    </div>
+  </div>`;
+  renderWeekBoard();renderWeekTasks();renderNoDate();renderPrazos();renderMiniCal();mountPomodoro();mountDaybar();
+}
+
+/* --- quadro semanal kanban --- */
+function renderWeekBoard(){
+  const showWE=DATA.settings.showWeekend;
+  // Sun=0 → show days 1-5 (Mon-Fri) by default; all 7 if showWeekend
+  const daysIdx=showWE?[0,1,2,3,4,5,6]:[1,2,3,4,5];
+  const board=$('#week-board');if(!board)return;
+  board.style.gridTemplateColumns=`repeat(${daysIdx.length},1fr)`;
+  const startSun=startOfWeek(new Date());startSun.setDate(startSun.getDate()+weekOffset*7);
+  // week label: Mon–Fri
+  const mon=new Date(startSun);mon.setDate(mon.getDate()+1);
+  const fri=new Date(startSun);fri.setDate(fri.getDate()+(showWE?6:5));
+  const wl=$('#week-label');if(wl)wl.textContent=`${mon.getDate()}/${mon.getMonth()+1} – ${fri.getDate()}/${fri.getMonth()+1}`;
+  let html='';
+  for(const di of daysIdx){
+    const d=new Date(startSun);d.setDate(d.getDate()+di);
+    const ds=dstr(d);const isToday=ds===todayStr();
+    const tasks=DATA.tasks.filter(t=>t.date===ds&&!t.done).sort((a,b)=>(a.isPrazo?-1:0)-(b.isPrazo?-1:0));
+    const done=DATA.tasks.filter(t=>t.date===ds&&t.done);
+    html+=`<div class="day-col${isToday?' today':''}" data-date="${ds}" ondragover="dayDragOver(event)" ondragleave="this.classList.remove('dragover')" ondrop="dayDrop(event)">
+      <div class="day-lbl"><b>${WEEKDAYS_FULL[di]}</b><span class="day-num">${d.getDate()}/${d.getMonth()+1}</span></div>
+      ${tasks.map(taskCardHtml).join('')}
+      ${done.length?`<div style="font-size:10px;color:var(--muted);margin-top:4px">${done.length} concluída(s)</div>`:''}
+      <button class="btn small" style="border-style:dashed;color:var(--muted);margin-top:auto;font-size:11px" onclick="taskForm(null,'${ds}')">+ tarefa</button>
+    </div>`;
+  }
+  board.innerHTML=html;
+}
+function renderWeekTasks(){
+  const box=$('#week-tasks-box');if(!box)return;
+  const startSun=startOfWeek(new Date());startSun.setDate(startSun.getDate()+weekOffset*7);
+  const startStr=dstr(new Date(startSun.getTime()+86400000)); // Mon
+  const endSun=new Date(startSun);endSun.setDate(endSun.getDate()+7);
+  const endStr=dstr(endSun);
+  const tasks=DATA.tasks.filter(t=>t.date&&t.date>=startStr&&t.date<=endStr&&!t.done)
+    .sort((a,b)=>a.date.localeCompare(b.date));
+  if(!tasks.length){box.innerHTML='<div class="empty">Sem tarefas esta semana.</div>';return;}
+  box.innerHTML=tasks.map(t=>`<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="openTaskDetail('${t.id}')">
+    <input type="checkbox" style="width:auto;flex-shrink:0" onclick="event.stopPropagation();toggleTask('${t.id}')" ${t.done?'checked':''}>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.isPrazo?'<b style="color:var(--red);font-size:9.5px">PRAZO </b>':''}${esc(t.title)}</div>
+      <div style="font-size:10.5px;color:var(--muted)">${WEEKDAYS[new Date(t.date+'T12:00').getDay()]} ${fmtD(t.date)}</div>
+    </div>
+  </div>`).join('');
+}
+function taskCardHtml(t){
+  const proc=t.processId?getProc(t.processId):null;
+  const cli=t.clientId?getClient(t.clientId):(proc?getClient(proc.clientId):null);
+  const totalSecs=(t.timeEntries||[]).reduce((s,e)=>s+(e.dur||0),0);
+  return `<div class="task-card${t.done?' done':''}${t.isPrazo?' prazo':''}" draggable="true" ondragstart="taskDragStart(event,'${t.id}')" onclick="openTaskDetail('${t.id}')">
+    <input type="checkbox" class="t-check" ${t.done?'checked':''} onclick="event.stopPropagation();toggleTask('${t.id}')">
+    ${t.isPrazo?'<b style="color:var(--red);font-size:10px">PRAZO </b>':''}${esc(t.title)}
+    ${cli||proc?`<div class="t-meta">${esc(clientLabel(cli)||'')}${cli&&proc?' · ':''}${proc?esc(proc.numero||proc.tipo):''}</div>`:''}
+    ${totalSecs?`<div class="t-meta">⏱ ${fmtDuration(totalSecs)}</div>`:''}
+  </div>`;
+}
+function taskDragStart(e,id){e.dataTransfer.setData('text/plain',id);}
+function dayDragOver(e){e.preventDefault();e.currentTarget.classList.add('dragover');}
+function dayDrop(e){
+  e.preventDefault();e.currentTarget.classList.remove('dragover');
+  const id=e.dataTransfer.getData('text/plain');
+  const t=DATA.tasks.find(x=>x.id===id);
+  if(t){t.date=e.currentTarget.dataset.date;save();render();}
+}
+function toggleTask(id){const t=DATA.tasks.find(x=>x.id===id);if(t){t.done=!t.done;if(t.done&&activeTimer.taskId===id)timerStop(id);save();render();}}
+
+/* ── Timer global ─────────────────────────────────────────────────────── */
+let activeTimer={taskId:null,startMs:null,elapsed:0,interval:null};
+function timerStop(taskId){
+  if(activeTimer.interval){clearInterval(activeTimer.interval);activeTimer.interval=null;}
+  if(activeTimer.startMs){activeTimer.elapsed+=(Date.now()-activeTimer.startMs)/1000;activeTimer.startMs=null;}
+}
+function timerReset(){timerStop();activeTimer={taskId:null,startMs:null,elapsed:0,interval:null};}
+function timerCurrentSecs(){return Math.floor(activeTimer.elapsed+((activeTimer.startMs)?(Date.now()-activeTimer.startMs)/1000:0));}
+
+/* ── Detalhe da tarefa ───────────────────────────────────────────────── */
+function openTaskDetail(id){
+  const t=DATA.tasks.find(x=>x.id===id);if(!t)return;
+  const proc=t.processId?getProc(t.processId):null;
+  const cli=t.clientId?getClient(t.clientId):(proc?getClient(proc.clientId):null);
+  const entries=t.timeEntries||[];
+  const totalSecs=entries.reduce((s,e)=>s+(e.dur||0),0);
+  const statuses=(DATA.settings.taskStatuses||['A Fazer','Em Andamento','Aguardando','Concluído']);
+  const curStatus=t.status||statuses[0];
+  const isRunning=activeTimer.taskId===id&&activeTimer.interval;
+  openModal(esc(t.title),`
+    <div class="td-meta">
+      <div class="td-meta-item">
+        <label>Status</label>
+        <select id="td-status" style="padding:4px 8px;font-size:12px" onchange="saveTaskField('${id}','status',this.value)">
+          ${statuses.map(s=>`<option ${curStatus===s?'selected':''}>${esc(s)}</option>`).join('')}
+        </select>
+      </div>
+      ${t.date?`<div class="td-meta-item"><label>Data</label><b style="font-size:13px">${fmtD(t.date)}</b>${t.isPrazo?' <span style="color:var(--red);font-size:10px;font-weight:800">PRAZO</span>':''}</div>`:''}
+      ${cli?`<div class="td-meta-item"><label>Cliente</label><span style="font-size:12.5px">${esc(clientLabel(cli))}</span></div>`:''}
+      ${proc?`<div class="td-meta-item"><label>Processo</label><span style="font-size:12px">${esc(proc.numero||proc.tipo)}</span></div>`:''}
+    </div>
+    ${t.desc?`<div style="background:var(--bg);padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;white-space:pre-wrap;line-height:1.55">${esc(t.desc)}</div>`:''}
+    <div class="task-timer">
+      <div id="td-timer" class="tt-time">${fmtDuration(isRunning?timerCurrentSecs():activeTimer.taskId===id?activeTimer.elapsed:0)}</div>
+      <div class="tt-total">Total já registrado: <b>${fmtDuration(totalSecs)}</b></div>
+      <div class="pomo-btns" style="margin-top:10px;gap:8px">
+        <button class="btn${isRunning?' danger':' primary'}" id="td-timer-btn" onclick="timerToggleUI('${id}')">${isRunning?'⏸ Pausar':'▶ Iniciar'}</button>
+        <button class="btn" onclick="timerSave('${id}')">💾 Salvar tempo</button>
+      </div>
+    </div>
+    ${entries.length?`<div style="margin-top:4px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Sessões registradas</div>
+      ${entries.slice().reverse().map(e=>`<div class="time-entry-row"><span>${fmtD(e.date||'')}</span><span>⏱ <b>${fmtDuration(e.dur)}</b></span></div>`).join('')}
+    </div>`:''}
+  `,`
+    <button class="btn" onclick="taskForm('${id}')">✎ Editar</button>
+    <span style="flex:1"></span>
+    <button class="btn${t.done?' primary':''}" onclick="toggleTask('${id}');openTaskDetail('${id}')">${t.done?'↩ Reabrir':'✓ Concluir'}</button>
+    <button class="btn" onclick="closeModal()">Fechar</button>
+  `);
+  if(isRunning)_timerTick(id);
+}
+function timerToggleUI(id){
+  if(activeTimer.taskId!==id){timerReset();activeTimer.taskId=id;}
+  if(activeTimer.interval){
+    timerStop(id);
+    const btn=$('#td-timer-btn');if(btn){btn.textContent='▶ Iniciar';btn.className='btn primary';}
+  } else {
+    activeTimer.startMs=Date.now();
+    activeTimer.interval=setInterval(()=>{
+      const el=$('#td-timer');if(el)el.textContent=fmtDuration(timerCurrentSecs());
+    },1000);
+    const btn=$('#td-timer-btn');if(btn){btn.textContent='⏸ Pausar';btn.className='btn danger';}
+  }
+}
+function _timerTick(id){
+  activeTimer.interval=setInterval(()=>{
+    const el=$('#td-timer');if(!el){clearInterval(activeTimer.interval);activeTimer.interval=null;return;}
+    el.textContent=fmtDuration(timerCurrentSecs());
+  },1000);
+}
+function timerSave(id){
+  const secs=timerCurrentSecs();
+  if(secs<5){showToast('Nenhum tempo para salvar (menos de 5 segundos).','warn');return;}
+  timerStop(id);
+  const t=DATA.tasks.find(x=>x.id===id);if(!t)return;
+  if(!t.timeEntries)t.timeEntries=[];
+  const entry={id:uid(),date:todayStr(),dur:Math.floor(secs)};
+  t.timeEntries.push(entry);
+  activeTimer.elapsed=0;activeTimer.taskId=null;
+  // Registra no cliente se vinculado
+  const proc=t.processId?getProc(t.processId):null;
+  const cliId=t.clientId||(proc?.clientId)||null;
+  if(cliId){
+    const cli=getClient(cliId);if(cli){
+      if(!cli.timeLog)cli.timeLog=[];
+      cli.timeLog.push({id:uid(),date:todayStr(),taskId:id,taskTitle:t.title,dur:entry.dur});
+    }
+  }
+  save();showToast(`⏱ ${fmtDuration(entry.dur)} salvo na tarefa!`,'success');
+  openTaskDetail(id);
+}
+function saveTaskField(id,field,value){
+  const t=DATA.tasks.find(x=>x.id===id);if(t){t[field]=value;save();}
+}
+function renderNoDate(){
+  const box=$('#nodate-tasks');if(!box)return;
+  const ts=DATA.tasks.filter(t=>!t.date&&!t.done);
+  box.innerHTML=ts.length?ts.map(taskCardHtml).join(''):'<div class="empty">Nenhuma tarefa sem data. Arraste tarefas entre os dias da semana acima.</div>';
+}
+
+/* --- prazos ativos --- */
+function renderPrazos(){
+  const box=$('#prazos-box');if(!box)return;
+  const prazos=DATA.tasks.filter(t=>t.isPrazo&&!t.done&&t.date).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!prazos.length){box.innerHTML='<div class="empty">Sem prazos ativos. Marque uma tarefa como “prazo” para vê-la aqui.</div>';return;}
+  box.innerHTML=prazos.map(t=>{
+    const d=daysUntil(t.date);
+    const col=d<0?'#a83232':d<=3?'var(--red)':d<=7?'var(--amber)':'var(--green)';
+    const bg=d<0?'#f6dada':d<=3?'#fbe4e4':d<=7?'#faf0d7':'#def0e6';
+    const proc=t.processId?getProc(t.processId):null;
+    return `<div class="prazo-item" onclick="taskForm('${t.id}')">
+      <div class="p-days" style="background:${bg};color:${col}">${d<0?Math.abs(d)+'d':d+'d'}<small>${d<0?'vencido':d===0?'é hoje!':'restantes'}</small></div>
+      <div><div class="p-tit">${esc(t.title)}</div><div class="p-sub">${fmtD(t.date)}${proc?' · '+esc(proc.numero||proc.tipo):''}</div></div>
+    </div>`;
+  }).join('');
+}
+
+/* --- mini calendário --- */
+function renderMiniCal(){
+  const box=$('#mini-cal');if(!box)return;
+  const y=miniCalDate.getFullYear(),m=miniCalDate.getMonth();
+  const first=new Date(y,m,1);const startDow=(first.getDay());
+  const dim=new Date(y,m+1,0).getDate();
+  const taskDates=new Set(DATA.tasks.filter(t=>t.date&&!t.done).map(t=>t.date));
+  let rows='',day=1;
+  for(let r=0;r<6&&day<=dim;r++){
+    rows+='<tr>';
+    for(let c=0;c<7;c++){
+      if((r===0&&c<startDow)||day>dim){rows+='<td></td>';continue;}
+      const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      rows+=`<td><span class="${ds===todayStr()?'today ':''}${taskDates.has(ds)?'hastask':''}" onclick="nav('agenda')">${day}</span></td>`;
+      day++;
+    }
+    rows+='</tr>';
+  }
+  box.innerHTML=`<div class="mc-head">
+    <button onclick="miniCalDate=new Date(${y},${m-1},1);renderMiniCal()">‹</button>
+    <span>${MONTHS[m]} ${y}</span>
+    <button onclick="miniCalDate=new Date(${y},${m+1},1);renderMiniCal()">›</button></div>
+    <table><tr>${WEEKDAYS.map(w=>`<th>${w[0]}</th>`).join('')}</tr>${rows}</table>`;
+}
+
+/* =====================================================
+   POMODORO (skins: tomate, timer, árvore)
+   ===================================================== */
+const pomo={phase:'work',remaining:0,total:0,running:false,timer:null};
+function pomoInit(){
+  if(!pomo.running){pomo.phase='work';pomo.total=DATA.settings.pomoWork*60;pomo.remaining=pomo.total;}
+}
+function mountPomodoro(){
+  const card=$('#pomo-card');if(!card)return;
+  pomoInit();
+  const s=DATA.settings;
+  card.innerHTML=`<div id="pomo-wrap">
+    <div id="pomo-phase" class="${pomo.phase}">${pomo.phase==='work'?'🍅 Foco':'☕ Pausa'}</div>
+    <div id="pomo-visual"></div>
+    <div id="pomo-time">--:--</div>
+    <div class="pomo-btns">
+      <button class="btn primary" id="pomo-toggle" onclick="pomoToggle()">${pomo.running?'Pausar':'Iniciar'}</button>
+      <button class="btn" onclick="pomoReset()">↺</button>
+    </div>
+    <div class="skin-picker">
+      <button title="Tomate" class="${s.pomoSkin==='tomato'?'active':''}" onclick="setSkin('tomato')">🍅</button>
+      <button title="Temporizador" class="${s.pomoSkin==='timer'?'active':''}" onclick="setSkin('timer')">⏱️</button>
+      <button title="Árvore" class="${s.pomoSkin==='tree'?'active':''}" onclick="setSkin('tree')">🌳</button>
+    </div>
+    <div class="muted" style="font-size:11px;margin-top:7px">${s.pomoWork} min foco · ${s.pomoBreak} min pausa — ajuste em Configurações</div>
+  </div>`;
+  pomoDraw();
+}
+function setSkin(k){DATA.settings.pomoSkin=k;save();mountPomodoro();}
+function pomoToggle(){
+  if(pomo.running){clearInterval(pomo.timer);pomo.running=false;}
+  else{
+    if(pomo.remaining<=0)pomoSetPhase(pomo.phase);
+    pomo.running=true;
+    pomo.timer=setInterval(()=>{
+      pomo.remaining--;
+      if(pomo.remaining<=0){
+        try{pomoBeep();}catch(e){}
+        pomoSetPhase(pomo.phase==='work'?'break':'work');
+      }
+      pomoDraw();
+    },1000);
+  }
+  const b=$('#pomo-toggle');if(b)b.textContent=pomo.running?'Pausar':'Iniciar';
+}
+function pomoSetPhase(ph){
+  pomo.phase=ph;
+  pomo.total=(ph==='work'?DATA.settings.pomoWork:DATA.settings.pomoBreak)*60;
+  pomo.remaining=pomo.total;
+  const el=$('#pomo-phase');if(el){el.className=ph;el.innerHTML=ph==='work'?'🍅 Foco':'☕ Pausa';}
+}
+function pomoReset(){clearInterval(pomo.timer);pomo.running=false;pomoSetPhase('work');pomoDraw();const b=$('#pomo-toggle');if(b)b.textContent='Iniciar';}
+function pomoBeep(){
+  const ctx=new (window.AudioContext||window.webkitAudioContext)();
+  const o=ctx.createOscillator(),g=ctx.createGain();
+  o.connect(g);g.connect(ctx.destination);o.frequency.value=880;g.gain.value=.15;
+  o.start();o.stop(ctx.currentTime+.6);
+}
+function pomoDraw(){
+  const tEl=$('#pomo-time'),vEl=$('#pomo-visual');if(!tEl||!vEl)return;
+  const m=Math.floor(Math.max(0,pomo.remaining)/60),s=Math.max(0,pomo.remaining)%60;
+  tEl.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  const prog=pomo.total?1-(pomo.remaining/pomo.total):0; // 0→1
+  const skin=DATA.settings.pomoSkin;
+  if(skin==='tomato')vEl.innerHTML=skinTomato(prog);
+  else if(skin==='timer')vEl.innerHTML=skinTimer(prog);
+  else vEl.innerHTML=skinTree(prog);
+}
+function skinTomato(p){
+  const fillY=95-p*72; // enche de baixo p/ cima
+  return `<svg width="120" height="130" viewBox="0 0 120 130">
+    <defs><clipPath id="tclip"><path d="M60 28C33 28 16 48 16 74c0 26 20 44 44 44s44-18 44-44c0-26-17-46-44-46z"/></clipPath></defs>
+    <path d="M60 28C33 28 16 48 16 74c0 26 20 44 44 44s44-18 44-44c0-26-17-46-44-46z" fill="#f3d6d6"/>
+    <rect x="10" y="${fillY}" width="100" height="${125-fillY}" fill="#e2504c" clip-path="url(#tclip)"/>
+    <path d="M60 28C33 28 16 48 16 74c0 26 20 44 44 44s44-18 44-44c0-26-17-46-44-46z" fill="none" stroke="#b83c38" stroke-width="3"/>
+    <path d="M60 30c-2-8-1-14 0-18" stroke="#4c8c3f" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M60 26c-8-6-16-6-24-3 6 6 14 8 24 3zm0 0c8-6 16-6 24-3-6 6-14 8-24 3z" fill="#5da24e"/>
+    <ellipse cx="42" cy="62" rx="7" ry="10" fill="rgba(255,255,255,.35)" transform="rotate(-18 42 62)"/>
+  </svg>`;
+}
+function skinTimer(p){
+  const R=52,C=2*Math.PI*R;
+  const col=pomo.phase==='work'?'#e2504c':'#2e9e6b';
+  return `<svg width="130" height="130" viewBox="0 0 130 130">
+    <circle cx="65" cy="65" r="${R}" fill="none" stroke="#eceef4" stroke-width="10"/>
+    <circle cx="65" cy="65" r="${R}" fill="none" stroke="${col}" stroke-width="10" stroke-linecap="round"
+      stroke-dasharray="${C}" stroke-dashoffset="${C*(1-p)}" transform="rotate(-90 65 65)" style="transition:stroke-dashoffset .5s linear"/>
+    <circle cx="65" cy="65" r="40" fill="#fff" stroke="#eceef4"/>
+    <text x="65" y="72" text-anchor="middle" font-size="26">${pomo.phase==='work'?'⏱️':'☕'}</text>
+  </svg>`;
+}
+function skinTree(p){
+  const trunkH=18+p*30, crownR=6+p*30;
+  const stage=p<0.15?0:p<0.5?1:2;
+  return `<svg width="130" height="140" viewBox="0 0 130 140">
+    <ellipse cx="65" cy="126" rx="42" ry="9" fill="#d9c9a8"/>
+    <rect x="61" y="${124-trunkH}" width="8" height="${trunkH}" rx="3" fill="#8a5a33"/>
+    ${stage===0?`<circle cx="65" cy="${120-trunkH}" r="7" fill="#7cbf6b"/>`:''}
+    ${stage>=1?`<circle cx="65" cy="${118-trunkH}" r="${crownR}" fill="#5da24e"/>
+      <circle cx="${65-crownR*.7}" cy="${124-trunkH}" r="${crownR*.72}" fill="#6fb35e"/>
+      <circle cx="${65+crownR*.7}" cy="${124-trunkH}" r="${crownR*.72}" fill="#6fb35e"/>`:''}
+    ${stage===2?`<circle cx="${60-crownR*.3}" cy="${112-trunkH}" r="3.4" fill="#e2504c"/>
+      <circle cx="${72+crownR*.2}" cy="${118-trunkH}" r="3.4" fill="#e2504c"/>
+      <circle cx="65" cy="${106-trunkH}" r="3.4" fill="#e2504c"/>`:''}
+  </svg>`;
+}
+
+/* =====================================================
+   BARRA DE PROGRESSO DO DIA
+   ===================================================== */
+let daybarTimer=null;
+function mountDaybar(){
+  const card=$('#daybar-card');if(!card)return;
+  card.innerHTML=`<div style="font-weight:700;font-size:13px;margin-bottom:4px">Seu dia</div>
+    <div id="daybar-wrap"><div id="daybar"></div><div id="daybar-info"></div></div>`;
+  drawDaybar();
+  clearInterval(daybarTimer);daybarTimer=setInterval(drawDaybar,30000);
+}
+function drawDaybar(){
+  const bar=$('#daybar');if(!bar)return;
+  const s=DATA.settings;
+  const st=minOfDay(s.workStart),le=minOfDay(s.lunchEnd),ls=minOfDay(s.lunchStart),en=minOfDay(s.workEnd);
+  const total=en-st;if(total<=0)return;
+  const pct=x=>((x/total)*100).toFixed(2)+'%';
+  const segs=[
+    {w:ls-st,c:'var(--blue-pastel)'},        // manhã
+    {w:le-ls,c:'var(--gray-pastel)'},        // almoço
+    {w:(en-15)-le,c:'var(--yellow-pastel)'}, // tarde
+    {w:15,c:'var(--red-pastel)'}             // últimos 15 min
+  ];
+  bar.innerHTML=segs.map(g=>`<div class="seg" style="width:${pct(g.w)};background:${g.c}"></div>`).join('');
+  const now=new Date();const nowMin=now.getHours()*60+now.getMinutes();
+  const clamped=Math.min(Math.max(nowMin,st),en);
+  bar.innerHTML+=`<div id="daybar-marker" style="left:calc(${pct(clamped-st)} - 1px)"></div>`;
+  const left=en-nowMin;
+  let msg;
+  if(nowMin<st)msg='O expediente ainda não começou';
+  else if(nowMin>=en)msg='Expediente encerrado — bom descanso! 🌙';
+  else if(left<=15)msg='⚠️ Últimos '+left+' min do dia!';
+  else if(nowMin>=ls&&nowMin<le)msg='🍽️ Horário de almoço';
+  else msg=Math.floor(left/60)+'h'+String(left%60).padStart(2,'0')+' até o fim do expediente';
+  $('#daybar-info').innerHTML=`<span>${s.workStart}</span><span style="font-weight:700;color:var(--text)">${msg}</span><span>${s.workEnd}</span>`;
+}
+/* =====================================================
+   PROCESSOS
+   ===================================================== */
+function renderProcs(v){
+  const ps=[...DATA.processes].sort((a,b)=>(a.numero||'').localeCompare(b.numero||''));
+  v.innerHTML=`
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <input id="proc-filter" placeholder="Filtrar por número, parte, juízo ou etiqueta…" style="max-width:380px" oninput="filterProcTable(this.value)">
+    <div class="row">
+      <button class="btn" onclick="tagManager()">🏷️ Etiquetas</button>
+      <button class="btn" onclick="atualizarTodos()" title="Consulta o DataJud para todos os processos com número CNJ cadastrado">🔄 Atualizar todos</button>
+      <button class="btn primary" onclick="procForm()">+ Novo processo</button>
+    </div>
+  </div>
+  <div class="card"><table class="tbl" id="proc-table">
+    <thead><tr><th>Número</th><th>Tipo</th><th>Partes</th><th>Cliente</th><th>Juízo</th><th>Etiquetas</th></tr></thead>
+    <tbody>${ps.map(p=>procRowHtml(p)).join('')||'<tr><td colspan="6" class="empty">Nenhum processo cadastrado.</td></tr>'}</tbody>
+  </table></div>`;
+}
+function procRowHtml(p){
+  const cli=getClient(p.clientId);
+  return `<tr class="click" data-search="${esc((p.numero+' '+p.poloAtivo+' '+p.poloPassivo+' '+p.juizo+' '+(p.tags||[]).map(t=>getTag(t)?.name||'').join(' ')).toLowerCase())}" onclick="nav('proc','${p.id}')">
+    <td><b>${esc(p.numero||'—')}</b></td><td>${esc(p.tipo)}</td>
+    <td style="font-size:12.5px">${esc(p.poloAtivo)}<br><span class="muted">× ${esc(p.poloPassivo)}</span></td>
+    <td>${esc(clientLabel(cli)||'—')}</td><td>${esc(p.juizo||'—')}</td>
+    <td>${(p.tags||[]).map(id=>{const t=getTag(id);return t?`<span class="chip" style="background:${t.color}">${esc(t.name)}</span>`:''}).join(' ')}</td></tr>`;
+}
+function filterProcTable(q){
+  q=q.toLowerCase();
+  document.querySelectorAll('#proc-table tbody tr').forEach(tr=>{
+    tr.style.display=!q||(tr.dataset.search||'').includes(q)?'':'none';
+  });
+}
+
+function procForm(id,clientId){
+  const p=id?getProc(id):null;
+  const types=DATA.procTypes;
+  openModal(p?'Editar processo':'Novo processo',`
+    <div class="field">
+      <label>Número do processo (CNJ)</label>
+      <div class="row">
+        <input id="pf-num" value="${esc(p?.numero||'')}" placeholder="0000000-00.0000.0.00.0000" style="flex:1">
+        <button class="btn primary" type="button" id="pf-buscar" onclick="buscaDataJud()" title="Preencher automaticamente consultando o DataJud/CNJ">🔍 Buscar no DataJud</button>
+      </div>
+      <div id="pf-dj-status" style="font-size:12px;margin-top:4px;color:var(--muted)"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Tipo de processo</label>
+        <select id="pf-tipo">${types.map(t=>`<option ${p?.tipo===t?'selected':''}>${esc(t)}</option>`).join('')}<option value="__novo">➕ Outro (digitar)…</option></select>
+      </div>
+      <div class="field"><label>Tribunal</label><input id="pf-tribunal" value="${esc(p?.tribunal||'')}" placeholder="Ex.: TJMG"></div>
+    </div>
+    <div class="field" id="pf-tipo-novo-wrap" style="display:none"><label>Nome do novo tipo</label><input id="pf-tipo-novo" placeholder="Ex.: Ação Declaratória"></div>
+    <div class="grid2">
+      <div class="field"><label>Polo ativo</label><input id="pf-ativo" value="${esc(p?.poloAtivo||'')}"></div>
+      <div class="field"><label>Polo passivo</label><input id="pf-passivo" value="${esc(p?.poloPassivo||'')}"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Juízo / Vara</label><input id="pf-juizo" value="${esc(p?.juizo||'')}" placeholder="Ex.: 2ª Vara da Fazenda Pública de..."></div>
+      <div class="field"><label>Cliente vinculado</label>
+        <select id="pf-cli"><option value="">— sem cliente —</option>${DATA.clients.map(c=>`<option value="${c.id}" ${(p?.clientId||clientId)===c.id?'selected':''}>${esc(clientLabel(c))}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="grid3">
+      <div class="field"><label>Valor da causa</label><input id="pf-valor" value="${esc(p?.valor||'')}" placeholder="R$"></div>
+      <div class="field"><label>Distribuição</label><input type="date" id="pf-dist" value="${p?.distribuicao||''}"></div>
+      <div class="field"><label>Assunto</label><input id="pf-assunto" value="${esc(p?.assunto||'')}" placeholder="Ex.: Responsabilidade Civil"></div>
+    </div>
+    <div class="field"><label>Etiquetas</label><div class="tag-row" id="pf-tags">${tagPickerHtml(p?.tags||[])}</div></div>
+    <div class="field"><label>Observações</label><textarea id="pf-obs">${esc(p?.obs||'')}</textarea></div>
+  `,`
+    ${p?`<button class="btn danger" onclick="delProc('${p.id}')">Excluir</button><span style="flex:1"></span>`:''}
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="saveProc('${id||''}')">Salvar</button>
+  `,true);
+  $('#pf-tipo').addEventListener('change',e=>{
+    $('#pf-tipo-novo-wrap').style.display=e.target.value==='__novo'?'block':'none';
+  });
+}
+function tagPickerHtml(selected){
+  return DATA.tags.map(t=>`<span class="chip" data-tag="${t.id}" style="background:${selected.includes(t.id)?t.color:'#c9ccd4'};cursor:pointer" onclick="this.dataset.on=this.dataset.on==='1'?'0':'1';this.style.background=this.dataset.on==='1'?'${t.color}':'#c9ccd4'" data-on="${selected.includes(t.id)?'1':'0'}">${esc(t.name)}</span>`).join('')
+  +` <button class="btn small" type="button" onclick="tagManager()">＋ gerenciar</button>`;
+}
+function collectTags(){return [...document.querySelectorAll('#pf-tags .chip')].filter(c=>c.dataset.on==='1').map(c=>c.dataset.tag);}
+function saveProc(id){
+  let tipo=$('#pf-tipo').value;
+  if(tipo==='__novo'){
+    tipo=$('#pf-tipo-novo').value.trim();
+    if(!tipo){alert('Digite o nome do novo tipo.');return;}
+    if(!DATA.procTypes.includes(tipo))DATA.procTypes.push(tipo);
+  }
+  const rec={
+    numero:$('#pf-num').value.trim(),tipo,
+    tribunal:$('#pf-tribunal').value.trim(),
+    assunto:$('#pf-assunto').value.trim(),
+    distribuicao:$('#pf-dist').value||null,
+    poloAtivo:$('#pf-ativo').value.trim(),poloPassivo:$('#pf-passivo').value.trim(),
+    juizo:$('#pf-juizo').value.trim(),clientId:$('#pf-cli').value||null,
+    valor:$('#pf-valor').value.trim(),obs:$('#pf-obs').value.trim(),tags:collectTags()
+  };
+  if(!rec.numero&&!rec.poloAtivo){alert('Informe ao menos o número do processo ou o polo ativo.');return;}
+  if(id){Object.assign(getProc(id),rec);}
+  else{DATA.processes.push({id:uid(),movs:[],desdobras:[],linked:[],lastSync:null,...rec});}
+  save();closeModal();render();
+}
+function delProc(id){
+  if(!confirmDel('Excluir este processo e todos os seus desdobramentos?'))return;
+  DATA.processes=DATA.processes.filter(p=>p.id!==id);
+  DATA.tasks.forEach(t=>{if(t.processId===id)t.processId=null;});
+  save();closeModal();nav('procs');
+}
+
+/* --- gerenciador de etiquetas --- */
+function tagManager(){
+  openModal('Etiquetas de áreas',`
+    <div id="tag-list">${DATA.tags.map(t=>`
+      <div class="row" style="margin-bottom:8px">
+        <input type="color" value="${t.color}" style="width:44px;padding:2px;height:36px" onchange="updTag('${t.id}','color',this.value)">
+        <input value="${esc(t.name)}" onchange="updTag('${t.id}','name',this.value)">
+        <button class="btn icon danger" onclick="delTag('${t.id}')">🗑</button>
+      </div>`).join('')}</div>
+    <div class="row" style="margin-top:12px">
+      <input type="color" id="nt-color" value="#5b5bd6" style="width:44px;padding:2px;height:36px">
+      <input id="nt-name" placeholder="Nova etiqueta (ex.: Previdenciário)">
+      <button class="btn primary" onclick="addTag()">Adicionar</button>
+    </div>
+  `,`<button class="btn primary" onclick="closeModal();render()">Concluir</button>`);
+}
+function updTag(id,k,v){const t=getTag(id);if(t){t[k]=v;save();}}
+function delTag(id){
+  if(!confirmDel('Excluir esta etiqueta? Ela será removida dos processos.'))return;
+  DATA.tags=DATA.tags.filter(t=>t.id!==id);
+  DATA.processes.forEach(p=>{p.tags=(p.tags||[]).filter(x=>x!==id);});
+  save();tagManager();
+}
+function addTag(){
+  const n=$('#nt-name').value.trim();if(!n)return;
+  DATA.tags.push({id:uid(),name:n,color:$('#nt-color').value});
+  save();tagManager();
+}
+
+/* --- detalhe do processo --- */
+function renderProcDetail(v,id){
+  const p=getProc(id);
+  if(!p){nav('procs');return;}
+  // Auto-sync silencioso se faz mais de 24h
+  if(deveAutoSync(p))setTimeout(()=>sincronizarMovimentacoes(p.id,false),600);
+  const cli=getClient(p.clientId);
+  const tasks=DATA.tasks.filter(t=>t.processId===id&&!t.done);
+  v.innerHTML=`
+  <button class="back" onclick="nav('procs')">‹ Processos</button>
+  <div class="detail-head">
+    <div class="dh-main">
+      <h2>${esc(p.numero||'(sem número)')}</h2>
+      <div class="muted">${esc(p.tipo)}${p.tribunal?' · '+esc(p.tribunal):''} · ${esc(p.juizo||'juízo não informado')}</div>
+      <div style="margin-top:5px;font-size:13.5px"><b>${esc(p.poloAtivo||'?')}</b> <span class="muted">×</span> <b>${esc(p.poloPassivo||'?')}</b></div>
+      <div class="tag-row">${(p.tags||[]).map(tid=>{const t=getTag(tid);return t?`<span class="chip" style="background:${t.color}">${esc(t.name)}</span>`:''}).join('')}</div>
+      ${cli?`<div style="font-size:12.5px;margin-top:3px">Cliente: <a href="javascript:nav('client','${cli.id}')">${esc(clientLabel(cli))}</a></div>`:''}
+      <div class="muted" style="font-size:12px;margin-top:3px">
+        ${p.assunto?esc(p.assunto)+' · ':''}
+        ${p.valor?'Valor: '+esc(p.valor)+' · ':''}
+        ${p.distribuicao?'Distribuído em '+fmtD(p.distribuicao)+' · ':''}
+        ${p.lastSync?'Atualizado em '+fmtD(p.lastSync.substring(0,10)):'Nunca sincronizado'}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+      <button class="btn" onclick="procForm('${p.id}')">✎ Editar</button>
+      <button class="btn" onclick="printProc('${p.id}')">🖨 Relatório PDF</button>
+      ${p.numero?`<button class="btn" id="btn-sync-${p.id}" onclick="sincronizarMovimentacoes('${p.id}',true)">🔄 Atualizar Processo</button>`:''}
+      <button class="btn primary" onclick="taskForm(null,null,'${p.id}')">+ Tarefa</button>
+    </div>
+  </div>
+  ${p.obs?`<div class="card" style="margin-bottom:16px"><div class="card-b" style="white-space:pre-wrap;font-size:13px">${esc(p.obs)}</div></div>`:''}
+  ${tasks.length?`<div class="card" style="margin-bottom:16px"><div class="card-h">Tarefas pendentes deste processo</div><div class="card-b">${tasks.map(taskCardHtml).join('')}</div></div>`:''}
+  <div class="dash-grid" style="grid-template-columns:1fr 1fr">
+    <div class="card">
+      <div class="card-h">Movimentações — processo principal<span class="sp"></span><button class="btn small primary" onclick="movForm('${p.id}','main')">+ Movimentação</button></div>
+      <div class="card-b">${movListHtml(p.movs,p.id,'main')}</div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-h">Desdobramentos e recursos<span class="sp"></span><button class="btn small primary" onclick="desdobraForm('${p.id}')">+ Desdobramento</button></div>
+        <div class="card-b">
+          ${(p.desdobras||[]).map(d=>`
+            <div class="desdobra">
+              <div class="d-h" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+                <span style="flex:1">▸ ${esc(d.tipo)}${d.numero?' · '+esc(d.numero):''}</span>
+                <button class="btn small" onclick="event.stopPropagation();desdobraForm('${p.id}','${d.id}')">✎</button>
+                <button class="btn small primary" onclick="event.stopPropagation();movForm('${p.id}','${d.id}')">+ Mov.</button>
+              </div>
+              <div class="d-b">${movListHtml(d.movs,p.id,d.id)}</div>
+            </div>`).join('')||'<div class="empty">Nenhum desdobramento (apelação, agravo, cumprimento de sentença…).</div>'}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">Processos vinculados<span class="sp"></span><button class="btn small primary" onclick="linkForm('${p.id}')">+ Vincular</button></div>
+        <div class="card-b">
+          ${(p.linked||[]).map(l=>{
+            const lp=l.procId?getProc(l.procId):null;
+            return `<div class="file-item"><span style="flex:1">${lp?`<a href="javascript:nav('proc','${lp.id}')">${esc(lp.numero||lp.tipo)}</a>`:`<b>${esc(l.numero||'')}</b>`} <span class="muted">— ${esc(l.rel||'')}</span></span>
+            <button class="btn small danger" onclick="unlink('${p.id}','${l.id}')">✕</button></div>`;
+          }).join('')||'<div class="empty">Ex.: embargos de terceiro, ação conexa…</div>'}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function movListHtml(movs,procId,scope){
+  if(!movs||!movs.length)return'<div class="empty">Nenhuma movimentação registrada.</div>';
+  return [...movs].sort((a,b)=>b.date.localeCompare(a.date)).map(m=>`
+    <div class="mov"><div class="mov-acts">
+        <button class="btn small" onclick="movForm('${procId}','${scope}','${m.id}')">✎</button>
+        <button class="btn small danger" onclick="delMov('${procId}','${scope}','${m.id}')">✕</button></div>
+      <div class="mov-h"><b>${esc(m.tipo)}</b><span class="mov-date">${fmtD(m.date)}</span></div>
+      ${m.desc?`<div class="mov-desc">${esc(m.desc)}</div>`:''}
+    </div>`).join('');
+}
+function movScopeObj(procId,scope){
+  const p=getProc(procId);if(!p)return null;
+  if(scope==='main')return p;
+  return (p.desdobras||[]).find(d=>d.id===scope);
+}
+function movForm(procId,scope,movId){
+  const holder=movScopeObj(procId,scope);
+  const m=movId?holder.movs.find(x=>x.id===movId):null;
+  openModal(m?'Editar movimentação':'Nova movimentação',`
+    <div class="grid2">
+      <div class="field"><label>Data</label><input type="date" id="mf-date" value="${m?.date||todayStr()}"></div>
+      <div class="field"><label>Tipo de movimento</label>
+        <select id="mf-tipo">${DATA.movTypes.map(t=>`<option ${m?.tipo===t?'selected':''}>${esc(t)}</option>`).join('')}<option value="__novo">➕ Outro (digitar)…</option></select>
+      </div>
+    </div>
+    <div class="field" id="mf-tipo-novo-wrap" style="display:none"><label>Nome do novo tipo</label><input id="mf-tipo-novo"></div>
+    <div class="field"><label>Descrição livre</label><textarea id="mf-desc" placeholder="Detalhes do andamento…">${esc(m?.desc||'')}</textarea></div>
+  `,`
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="saveMov('${procId}','${scope}','${movId||''}')">Salvar</button>
+  `);
+  $('#mf-tipo').addEventListener('change',e=>{$('#mf-tipo-novo-wrap').style.display=e.target.value==='__novo'?'block':'none';});
+  if(m&&!DATA.movTypes.includes(m.tipo)){
+    $('#mf-tipo').value='__novo';$('#mf-tipo-novo-wrap').style.display='block';$('#mf-tipo-novo').value=m.tipo;
+  }
+}
+function saveMov(procId,scope,movId){
+  const holder=movScopeObj(procId,scope);if(!holder)return;
+  let tipo=$('#mf-tipo').value;
+  if(tipo==='__novo'){
+    tipo=$('#mf-tipo-novo').value.trim();
+    if(!tipo){alert('Digite o tipo do movimento.');return;}
+    if(!DATA.movTypes.includes(tipo))DATA.movTypes.push(tipo);
+  }
+  const rec={date:$('#mf-date').value||todayStr(),tipo,desc:$('#mf-desc').value.trim()};
+  if(movId){Object.assign(holder.movs.find(x=>x.id===movId),rec);}
+  else{holder.movs.push({id:uid(),...rec});}
+  save();closeModal();render();
+}
+function delMov(procId,scope,movId){
+  if(!confirmDel('Excluir esta movimentação?'))return;
+  const holder=movScopeObj(procId,scope);
+  holder.movs=holder.movs.filter(m=>m.id!==movId);
+  save();render();
+}
+function desdobraForm(procId,dId){
+  const p=getProc(procId);
+  const d=dId?(p.desdobras||[]).find(x=>x.id===dId):null;
+  const kinds=['Recurso de Apelação','Agravo de Instrumento','Embargos de Declaração','Recurso Especial','Recurso Extraordinário','Recurso Ordinário','Cumprimento de Sentença','Incidente de Desconsideração','Impugnação','Outro'];
+  openModal(d?'Editar desdobramento':'Novo desdobramento',`
+    <div class="field"><label>Tipo</label>
+      <select id="df-tipo">${kinds.map(k=>`<option ${d?.tipo===k?'selected':''}>${k}</option>`).join('')}</select></div>
+    <div class="field" id="df-outro-wrap" style="display:${d&&!kinds.includes(d.tipo)?'block':'none'}"><label>Descreva</label><input id="df-outro" value="${d&&!kinds.includes(d.tipo)?esc(d.tipo):''}"></div>
+    <div class="field"><label>Número (se houver)</label><input id="df-num" value="${esc(d?.numero||'')}"></div>
+  `,`
+    ${d?`<button class="btn danger" onclick="delDesdobra('${procId}','${dId}')">Excluir</button><span style="flex:1"></span>`:''}
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="saveDesdobra('${procId}','${dId||''}')">Salvar</button>
+  `);
+  if(d&&!kinds.includes(d.tipo))$('#df-tipo').value='Outro';
+  $('#df-tipo').addEventListener('change',e=>{$('#df-outro-wrap').style.display=e.target.value==='Outro'?'block':'none';});
+}
+function saveDesdobra(procId,dId){
+  const p=getProc(procId);
+  let tipo=$('#df-tipo').value;
+  if(tipo==='Outro'){tipo=$('#df-outro').value.trim()||'Outro';}
+  const rec={tipo,numero:$('#df-num').value.trim()};
+  if(dId){Object.assign(p.desdobras.find(x=>x.id===dId),rec);}
+  else{p.desdobras=p.desdobras||[];p.desdobras.push({id:uid(),movs:[],...rec});}
+  save();closeModal();render();
+}
+function delDesdobra(procId,dId){
+  if(!confirmDel('Excluir este desdobramento e suas movimentações?'))return;
+  const p=getProc(procId);
+  p.desdobras=p.desdobras.filter(d=>d.id!==dId);
+  save();closeModal();render();
+}
+function linkForm(procId){
+  openModal('Vincular processo',`
+    <div class="field"><label>Processo já cadastrado</label>
+      <select id="lf-proc"><option value="">— ou informe manualmente abaixo —</option>
+      ${DATA.processes.filter(x=>x.id!==procId).map(x=>`<option value="${x.id}">${esc(x.numero||x.tipo)}</option>`).join('')}</select></div>
+    <div class="field"><label>Número (se não cadastrado)</label><input id="lf-num" placeholder="Número do processo externo"></div>
+    <div class="field"><label>Relação</label><input id="lf-rel" placeholder="Ex.: Embargos de terceiro, ação conexa…"></div>
+  `,`
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="saveLink('${procId}')">Vincular</button>
+  `);
+}
+function saveLink(procId){
+  const p=getProc(procId);
+  p.linked=p.linked||[];
+  p.linked.push({id:uid(),procId:$('#lf-proc').value||null,numero:$('#lf-num').value.trim(),rel:$('#lf-rel').value.trim()});
+  save();closeModal();render();
+}
+function unlink(procId,lid){
+  const p=getProc(procId);
+  p.linked=p.linked.filter(l=>l.id!==lid);
+  save();render();
+}
+
+/* --- relatório em PDF (via impressão do navegador) --- */
+function printProc(id){
+  const p=getProc(id);if(!p)return;
+  const cli=getClient(p.clientId);
+  const s=DATA.settings;
+  const movBlock=(movs)=>[...(movs||[])].sort((a,b)=>b.date.localeCompare(a.date)).map(m=>
+    `<div class="pmov"><b>${esc(m.tipo)}</b> <span class="d">— ${fmtD(m.date)}</span>${m.desc?`<div>${esc(m.desc)}</div>`:''}</div>`).join('')||'<p style="color:#888">Sem movimentações.</p>';
+  $('#print-root').innerHTML=`
+    <div class="p-head">
+      <div>${s.logo?`<img src="${s.logo}">`:`<h1>${esc(s.officeName)}</h1>`}</div>
+      <div style="text-align:right">
+        <b style="font-size:15px">Relatório do Processo</b><br>
+        <span style="color:#666;font-size:11px">Emitido em ${fmtD(todayStr())} · ${esc(s.officeName)}</span>
+      </div>
+      <div>${cli?.logo?`<img src="${cli.logo}">`:''}</div>
+    </div>
+    <table>
+      <tr><th style="width:160px">Número</th><td>${esc(p.numero||'—')}</td></tr>
+      <tr><th>Tipo</th><td>${esc(p.tipo)}</td></tr>
+      <tr><th>Polo ativo</th><td>${esc(p.poloAtivo||'—')}</td></tr>
+      <tr><th>Polo passivo</th><td>${esc(p.poloPassivo||'—')}</td></tr>
+      <tr><th>Juízo</th><td>${esc(p.juizo||'—')}</td></tr>
+      ${cli?`<tr><th>Cliente</th><td>${esc(clientLabel(cli))}</td></tr>`:''}
+      ${p.valor?`<tr><th>Valor da causa</th><td>${esc(p.valor)}</td></tr>`:''}
+      ${(p.tags||[]).length?`<tr><th>Áreas</th><td>${(p.tags||[]).map(t=>esc(getTag(t)?.name||'')).join(', ')}</td></tr>`:''}
+    </table>
+    ${p.obs?`<h2>Observações</h2><p>${esc(p.obs)}</p>`:''}
+    <h2>Movimentações — processo principal</h2>
+    ${movBlock(p.movs)}
+    ${(p.desdobras||[]).map(d=>`<h2>${esc(d.tipo)}${d.numero?' · '+esc(d.numero):''}</h2>${movBlock(d.movs)}`).join('')}
+    <div class="pfoot">${esc(s.officeName)}${s.userEmail?' · '+esc(s.userEmail):''} — relatório gerado pelo sistema</div>`;
+  window.print();
+}
+/* =====================================================
+   CLIENTES
+   ===================================================== */
+function renderClients(v){
+  const cs=[...DATA.clients].sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  v.innerHTML=`
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <input placeholder="Filtrar clientes…" style="max-width:340px" oninput="filterClients(this.value)">
+    <button class="btn primary" onclick="clientForm()">+ Novo cliente</button>
+  </div>
+  <div class="card"><table class="tbl" id="cli-table">
+    <thead><tr><th></th><th>Nome</th><th>CPF/CNPJ</th><th>E-mail</th><th>Processos</th></tr></thead>
+    <tbody>${cs.map(c=>{
+      const nproc=DATA.processes.filter(p=>p.clientId===c.id).length;
+      return `<tr class="click" data-search="${esc((c.nome+' '+(c.fantasia||'')+' '+(c.doc||'')).toLowerCase())}" onclick="nav('client','${c.id}')">
+        <td style="width:50px"><div class="avatar">${c.logo?`<img src="${c.logo}">`:esc(initials(clientLabel(c)))}</div></td>
+        <td><b>${esc(c.nome)}</b>${c.fantasia?`<br><span class="muted" style="font-size:12px">${esc(c.fantasia)}</span>`:''}</td>
+        <td>${esc(c.doc||'—')}</td><td>${esc((c.emails||[])[0]||'—')}</td>
+        <td>${nproc?`<span class="chip" style="background:var(--accent)">${nproc}</span>`:'—'}</td></tr>`;
+    }).join('')||'<tr><td colspan="5" class="empty">Nenhum cliente cadastrado.</td></tr>'}</tbody>
+  </table></div>`;
+}
+function filterClients(q){
+  q=q.toLowerCase();
+  document.querySelectorAll('#cli-table tbody tr').forEach(tr=>{
+    tr.style.display=!q||(tr.dataset.search||'').includes(q)?'':'none';
+  });
+}
+function clientForm(id){
+  const c=id?getClient(id):null;
+  openModal(c?'Editar cliente':'Novo cliente',`
+    <div class="grid2">
+      <div class="field"><label>CPF / CNPJ</label><input id="cf-doc" value="${esc(c?.doc||'')}" oninput="this.value=maskDoc(this.value)"></div>
+      <div class="field"><label>Logo / foto</label><input type="file" id="cf-logo" accept="image/*"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Nome empresarial / nome civil</label><input id="cf-nome" value="${esc(c?.nome||'')}"></div>
+      <div class="field"><label>Nome fantasia / apelido</label><input id="cf-fant" value="${esc(c?.fantasia||'')}"></div>
+    </div>
+    <div class="field"><label>E-mails (separados por vírgula)</label><input id="cf-emails" value="${esc((c?.emails||[]).join(', '))}"></div>
+    <div class="grid2">
+      <div class="field"><label>Telefone</label><input id="cf-tel" value="${esc(c?.tel||'')}"></div>
+      <div class="field"><label>Cidade/UF</label><input id="cf-cid" value="${esc(c?.cidade||'')}"></div>
+    </div>
+    <div class="field"><label>Observações</label><textarea id="cf-obs">${esc(c?.obs||'')}</textarea></div>
+  `,`
+    ${c?`<button class="btn danger" onclick="delClient('${c.id}')">Excluir</button><span style="flex:1"></span>`:''}
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="saveClient('${id||''}')">Salvar</button>
+  `,true);
+}
+function saveClient(id){
+  const nome=$('#cf-nome').value.trim();
+  if(!nome){alert('Informe o nome do cliente.');return;}
+  const rec={
+    doc:$('#cf-doc').value.trim(),nome,fantasia:$('#cf-fant').value.trim(),
+    emails:$('#cf-emails').value.split(',').map(e=>e.trim()).filter(Boolean),
+    tel:$('#cf-tel').value.trim(),cidade:$('#cf-cid').value.trim(),obs:$('#cf-obs').value.trim()
+  };
+  const fileInput=$('#cf-logo');
+  const finish=(logo)=>{
+    if(id){const c=getClient(id);Object.assign(c,rec);if(logo)c.logo=logo;}
+    else{DATA.clients.push({id:uid(),logo:logo||null,folders:['Contrato Social','Documentos dos Sócios','Contratos com o Escritório'],files:[],emailsHist:[],meetings:[],...rec});}
+    save();closeModal();render();
+  };
+  if(fileInput.files[0])readImg(fileInput.files[0],300,finish);else finish(null);
+}
+function delClient(id){
+  if(!confirmDel('Excluir este cliente? Os processos dele NÃO serão excluídos, apenas desvinculados.'))return;
+  const c=getClient(id);
+  (c.files||[]).forEach(f=>fileDel(f.id));
+  DATA.clients=DATA.clients.filter(x=>x.id!==id);
+  DATA.processes.forEach(p=>{if(p.clientId===id)p.clientId=null;});
+  DATA.tasks.forEach(t=>{if(t.clientId===id)t.clientId=null;});
+  save();closeModal();nav('clients');
+}
+
+let cliTab='procs';
+function renderClientDetail(v,id){
+  const c=getClient(id);
+  if(!c){nav('clients');return;}
+  const procs=DATA.processes.filter(p=>p.clientId===id);
+  const tasks=DATA.tasks.filter(t=>t.clientId===id&&!t.done);
+  v.innerHTML=`
+  <button class="back" onclick="nav('clients')">‹ Clientes</button>
+  <div class="detail-head">
+    <div class="avatar" style="width:62px;height:62px;font-size:22px;border-radius:14px">${c.logo?`<img src="${c.logo}">`:esc(initials(clientLabel(c)))}</div>
+    <div class="dh-main">
+      <h2>${esc(c.nome)}</h2>
+      <div class="muted">${c.fantasia?esc(c.fantasia)+' · ':''}${esc(c.doc||'')}</div>
+      <div style="font-size:12.5px;margin-top:3px">${(c.emails||[]).map(e=>`<a href="mailto:${esc(e)}">${esc(e)}</a>`).join(' · ')} ${c.tel?' · '+esc(c.tel):''} ${c.cidade?' · '+esc(c.cidade):''}</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="clientForm('${c.id}')">✎ Editar</button>
+      <button class="btn primary" onclick="taskForm(null,null,null,'${c.id}')">+ Tarefa</button>
+    </div>
+  </div>
+  ${c.obs?`<div class="card" style="margin-bottom:14px"><div class="card-b" style="font-size:13px;white-space:pre-wrap">${esc(c.obs)}</div></div>`:''}
+  <div class="tabs">
+    ${[['procs','⚖️ Processos'],['files','📁 Pastas e arquivos'],['emails','✉️ Conversas por e-mail'],['meets','🎥 Reuniões'],['tasks','☑️ Tarefas']].map(([k,l])=>
+      `<button class="${cliTab===k?'active':''}" onclick="cliTab='${k}';render()">${l}</button>`).join('')}
+  </div>
+  <div id="cli-tab-body"></div>`;
+  const body=$('#cli-tab-body');
+  if(cliTab==='procs'){
+    body.innerHTML=`<div style="text-align:right;margin-bottom:10px"><button class="btn primary" onclick="procForm(null,'${c.id}')">+ Novo processo deste cliente</button></div>
+    <div class="card"><table class="tbl"><thead><tr><th>Número</th><th>Tipo</th><th>Partes</th><th>Juízo</th><th>Etiquetas</th></tr></thead>
+    <tbody>${procs.map(p=>{
+      return `<tr class="click" onclick="nav('proc','${p.id}')"><td><b>${esc(p.numero||'—')}</b></td><td>${esc(p.tipo)}</td>
+      <td style="font-size:12.5px">${esc(p.poloAtivo)}<br><span class="muted">× ${esc(p.poloPassivo)}</span></td><td>${esc(p.juizo||'—')}</td>
+      <td>${(p.tags||[]).map(tid=>{const t=getTag(tid);return t?`<span class="chip" style="background:${t.color}">${esc(t.name)}</span>`:''}).join(' ')}</td></tr>`;
+    }).join('')||'<tr><td colspan="5" class="empty">Nenhum processo deste cliente.</td></tr>'}</tbody></table></div>`;
+  }
+  else if(cliTab==='files')renderClientFiles(body,c);
+  else if(cliTab==='emails'){
+    body.innerHTML=`<div style="text-align:right;margin-bottom:10px"><button class="btn primary" onclick="histForm('${c.id}','email')">+ Registrar conversa</button></div>
+    ${(c.emailsHist||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(h=>`
+      <div class="hist-item"><span class="h-date">${fmtD(h.date)} <button class="btn small" onclick="histForm('${c.id}','email','${h.id}')">✎</button> <button class="btn small danger" onclick="delHist('${c.id}','email','${h.id}')">✕</button></span>
+      <b>✉️ ${esc(h.title)}</b>${h.notes?`<p>${esc(h.notes)}</p>`:''}</div>`).join('')||'<div class="empty">Registre aqui o histórico das conversas por e-mail, organizado por título.</div>'}`;
+  }
+  else if(cliTab==='meets'){
+    body.innerHTML=`<div style="text-align:right;margin-bottom:10px"><button class="btn primary" onclick="histForm('${c.id}','meet')">+ Registrar reunião</button></div>
+    ${(c.meetings||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(h=>`
+      <div class="hist-item"><span class="h-date">${fmtD(h.date)} <button class="btn small" onclick="histForm('${c.id}','meet','${h.id}')">✎</button> <button class="btn small danger" onclick="delHist('${c.id}','meet','${h.id}')">✕</button></span>
+      <b>🎥 ${esc(h.title)}</b>${h.link?`<div style="font-size:12px"><a href="${esc(h.link)}" target="_blank">${esc(h.link)}</a></div>`:''}${h.notes?`<p>${esc(h.notes)}</p>`:''}</div>`).join('')||'<div class="empty">Registre aqui reuniões feitas (Meet, presenciais…), com anotações.</div>'}`;
+  }
+  else if(cliTab==='tasks'){
+    body.innerHTML=`<div style="text-align:right;margin-bottom:10px"><button class="btn primary" onclick="taskForm(null,null,null,'${c.id}')">+ Tarefa</button></div>
+    <div class="card"><div class="card-b">${tasks.map(taskCardHtml).join('')||'<div class="empty">Nenhuma tarefa pendente.</div>'}</div></div>`;
+  }
+}
+function renderClientFiles(body,c){
+  c.folders=c.folders||[];c.files=c.files||[];
+  body.innerHTML=`
+  <div class="row" style="justify-content:flex-end;margin-bottom:10px">
+    <input id="nf-name" placeholder="Nova pasta…" style="max-width:220px">
+    <button class="btn" onclick="addFolder('${c.id}')">+ Pasta</button>
+  </div>
+  ${c.folders.map(f=>`
+    <div class="folder">
+      <div class="f-h"><span style="flex:1">📁 ${esc(f)}</span>
+        <label class="btn small" style="margin:0;text-transform:none;letter-spacing:0">⬆ Enviar arquivo<input type="file" multiple style="display:none" onchange="uploadFiles('${c.id}','${esc(f)}',this)"></label>
+        <button class="btn small danger" onclick="delFolder('${c.id}','${esc(f)}')">✕</button>
+      </div>
+      <div class="f-b">
+        ${c.files.filter(x=>x.folder===f).map(x=>`
+          <div class="file-item">📄 <span style="flex:1">${esc(x.name)}</span>
+            <span class="muted" style="font-size:11px">${(x.size/1024).toFixed(0)} KB</span>
+            <button class="btn small" onclick="downloadFile('${x.id}')">⬇ Baixar</button>
+            <button class="btn small danger" onclick="removeFile('${c.id}','${x.id}')">✕</button></div>`).join('')||'<div class="empty" style="padding:6px">Pasta vazia.</div>'}
+      </div>
+    </div>`).join('')}
+  <div class="muted" style="font-size:11.5px;margin-top:8px">💡 Os arquivos ficam salvos neste navegador. Para documentos grandes, prefira guardá-los no computador/Drive e registrar aqui apenas os essenciais.</div>`;
+}
+function addFolder(cid){
+  const c=getClient(cid);const n=$('#nf-name').value.trim();if(!n)return;
+  if(!c.folders.includes(n))c.folders.push(n);
+  save();render();
+}
+function delFolder(cid,f){
+  const c=getClient(cid);
+  const has=c.files.some(x=>x.folder===f);
+  if(has&&!confirmDel('A pasta contém arquivos, que também serão excluídos. Continuar?'))return;
+  c.files.filter(x=>x.folder===f).forEach(x=>fileDel(x.id));
+  c.files=c.files.filter(x=>x.folder!==f);
+  c.folders=c.folders.filter(x=>x!==f);
+  save();render();
+}
+function uploadFiles(cid,folder,input){
+  const c=getClient(cid);
+  const files=[...input.files];
+  let pend=files.length;
+  files.forEach(f=>{
+    if(f.size>15*1024*1024){alert(f.name+': arquivo acima de 15 MB — muito grande para guardar no navegador.');if(--pend===0)render();return;}
+    const rd=new FileReader();
+    rd.onload=async()=>{
+      const id=uid();
+      await idbReady;
+      await fileAdd({id,data:rd.result,name:f.name,type:f.type});
+      c.files.push({id,folder,name:f.name,size:f.size,date:todayStr()});
+      save();
+      if(--pend===0)render();
+    };
+    rd.readAsDataURL(f);
+  });
+}
+async function downloadFile(id){
+  await idbReady;
+  const rec=await fileGet(id);
+  if(!rec){alert('Arquivo não encontrado neste navegador.');return;}
+  const a=document.createElement('a');a.href=rec.data;a.download=rec.name;a.click();
+}
+function removeFile(cid,id){
+  if(!confirmDel('Excluir este arquivo?'))return;
+  const c=getClient(cid);
+  c.files=c.files.filter(x=>x.id!==id);
+  fileDel(id);save();render();
+}
+function histForm(cid,kind,hid){
+  const c=getClient(cid);
+  const list=kind==='email'?(c.emailsHist=c.emailsHist||[]):(c.meetings=c.meetings||[]);
+  const h=hid?list.find(x=>x.id===hid):null;
+  openModal(kind==='email'?(h?'Editar conversa':'Registrar conversa por e-mail'):(h?'Editar reunião':'Registrar reunião'),`
+    <div class="grid2">
+      <div class="field"><label>Data</label><input type="date" id="hf-date" value="${h?.date||todayStr()}"></div>
+      <div class="field"><label>Título</label><input id="hf-title" value="${esc(h?.title||'')}" placeholder="${kind==='email'?'Assunto da conversa':'Pauta da reunião'}"></div>
+    </div>
+    ${kind==='meet'?`<div class="field"><label>Link (Meet, gravação…)</label><input id="hf-link" value="${esc(h?.link||'')}" placeholder="https://meet.google.com/…"></div>`:''}
+    <div class="field"><label>Anotações</label><textarea id="hf-notes" rows="5">${esc(h?.notes||'')}</textarea></div>
+  `,`
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="saveHist('${cid}','${kind}','${hid||''}')">Salvar</button>
+  `);
+}
+function saveHist(cid,kind,hid){
+  const c=getClient(cid);
+  const list=kind==='email'?c.emailsHist:c.meetings;
+  const title=$('#hf-title').value.trim();
+  if(!title){alert('Informe um título.');return;}
+  const rec={date:$('#hf-date').value||todayStr(),title,notes:$('#hf-notes').value.trim()};
+  if(kind==='meet')rec.link=$('#hf-link').value.trim();
+  if(hid){Object.assign(list.find(x=>x.id===hid),rec);}
+  else{list.push({id:uid(),...rec});}
+  save();closeModal();render();
+}
+function delHist(cid,kind,hid){
+  if(!confirmDel())return;
+  const c=getClient(cid);
+  if(kind==='email')c.emailsHist=c.emailsHist.filter(x=>x.id!==hid);
+  else c.meetings=c.meetings.filter(x=>x.id!==hid);
+  save();render();
+}
+/* =====================================================
+   TAREFAS
+   ===================================================== */
+let taskView='list'; // 'list' | 'kanban'
+function renderTasks(v){
+  v.innerHTML=`
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <div class="row" style="gap:6px">
+      <button class="btn${taskView==='list'?' primary':''}" onclick="taskView='list';renderTasks($('#view'))">≡ Lista</button>
+      <button class="btn${taskView==='kanban'?' primary':''}" onclick="taskView='kanban';renderTasks($('#view'))">⊞ Kanban</button>
+    </div>
+    <button class="btn primary" onclick="taskForm()">+ Nova tarefa</button>
+  </div>
+  <div id="tasks-inner"></div>`;
+  if(taskView==='kanban')renderKanban($('#tasks-inner'));
+  else renderTaskList($('#tasks-inner'));
+}
+function renderTaskList(v){
+  if(!v)return;
+  const statuses=(DATA.settings.taskStatuses||['A Fazer','Em Andamento','Aguardando','Concluído']);
+  const pend=DATA.tasks.filter(t=>!t.done).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
+  const done=DATA.tasks.filter(t=>t.done).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const row=t=>{
+    const proc=t.processId?getProc(t.processId):null;
+    const cli=t.clientId?getClient(t.clientId):(proc?getClient(proc.clientId):null);
+    const totalSecs=(t.timeEntries||[]).reduce((s,e)=>s+(e.dur||0),0);
+    return `<tr class="click" onclick="openTaskDetail('${t.id}')">
+      <td style="width:36px"><input type="checkbox" ${t.done?'checked':''} onclick="event.stopPropagation();toggleTask('${t.id}')"></td>
+      <td>${t.isPrazo?'<b style="color:var(--red);font-size:10.5px">PRAZO</b> ':''}<b>${esc(t.title)}</b>
+        <br><span class="muted" style="font-size:11px">${t.status||statuses[0]}${totalSecs?' · ⏱ '+fmtDuration(totalSecs):''}</span></td>
+      <td>${t.date?fmtD(t.date):'—'}</td>
+      <td>${cli?esc(clientLabel(cli)):'—'}</td>
+      <td>${proc?esc(proc.numero||proc.tipo):'—'}</td></tr>`;
+  };
+  v.innerHTML=`
+  <div class="card"><div class="card-h">Pendentes (${pend.length})</div>
+    <table class="tbl"><thead><tr><th></th><th>Tarefa</th><th>Data</th><th>Cliente</th><th>Processo</th></tr></thead>
+    <tbody>${pend.map(row).join('')||'<tr><td colspan="5" class="empty">Nenhuma tarefa pendente 🎉</td></tr>'}</tbody></table></div>
+  <div class="card" style="margin-top:16px"><div class="card-h">Concluídas (${done.length})</div>
+    <table class="tbl" style="opacity:.65"><tbody>${done.slice(0,30).map(row).join('')||'<tr><td class="empty">Nada concluído ainda.</td></tr>'}</tbody></table></div>`;
+}
+function renderKanban(v){
+  if(!v)return;
+  const statuses=(DATA.settings.taskStatuses||['A Fazer','Em Andamento','Aguardando','Concluído']);
+  const cols=statuses.map(st=>{
+    const tasks=DATA.tasks.filter(t=>!t.done&&(t.status||statuses[0])===st);
+    const doneCol=st==='Concluído'?DATA.tasks.filter(t=>t.done):[];
+    const all=[...tasks,...doneCol];
+    return `<div class="k-col" data-status="${esc(st)}"
+        ondragover="event.preventDefault();this.classList.add('dragover-col')"
+        ondragleave="this.classList.remove('dragover-col')"
+        ondrop="kanbanDrop(event,'${esc(st)}')">
+      <div class="k-col-h">${esc(st)}<span style="background:var(--border);border-radius:10px;padding:1px 7px;font-size:10px;color:var(--muted)">${all.length}</span></div>
+      <div class="k-col-body">${all.map(t=>{
+        const proc=t.processId?getProc(t.processId):null;
+        const cli=t.clientId?getClient(t.clientId):(proc?getClient(proc.clientId):null);
+        return `<div class="k-card${t.isPrazo?' prazo':''}${t.done?' done':''}" draggable="true"
+            ondragstart="taskDragStart(event,'${t.id}')" onclick="openTaskDetail('${t.id}')">
+          <div style="font-size:12.5px;font-weight:600">${t.isPrazo?'<b style="color:var(--red);font-size:9.5px">PRAZO </b>':''}${esc(t.title)}</div>
+          ${t.date?`<div style="font-size:10.5px;color:var(--muted);margin-top:2px">${fmtD(t.date)}</div>`:''}
+          ${cli?`<div style="font-size:10.5px;color:var(--muted)">${esc(clientLabel(cli))}</div>`:''}
+        </div>`;
+      }).join('')||'<div class="empty" style="font-size:11.5px">Sem tarefas</div>'}</div>
+    </div>`;
+  });
+  v.innerHTML=`<div class="kanban-wrap">${cols.join('')}</div>`;
+}
+function kanbanDrop(e,status){
+  e.preventDefault();e.currentTarget.classList.remove('dragover-col');
+  const id=e.dataTransfer.getData('text/plain');
+  const t=DATA.tasks.find(x=>x.id===id);
+  if(t){
+    const statuses=(DATA.settings.taskStatuses||['A Fazer','Em Andamento','Aguardando','Concluído']);
+    t.status=status;
+    t.done=(status==='Concluído');
+    save();renderKanban($('#tasks-inner'));
+  }
+}
+function taskForm(id,date,processId,clientId){
+  const t=id?DATA.tasks.find(x=>x.id===id):null;
+  openModal(t?'Editar tarefa':'Nova tarefa',`
+    <div class="field"><label>Título</label><input id="tf-title" value="${esc(t?.title||'')}" placeholder="O que precisa ser feito?"></div>
+    <div class="grid2">
+      <div class="field"><label>Data</label><input type="date" id="tf-date" value="${t?.date||date||''}"></div>
+      <div class="field" style="display:flex;align-items:flex-end;padding-bottom:14px">
+        <label style="display:flex;align-items:center;gap:8px;margin:0;cursor:pointer;text-transform:none;font-size:13px">
+        <input type="checkbox" id="tf-prazo" style="width:auto" ${t?.isPrazo?'checked':''}> É um prazo processual ⏰</label>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Cliente</label>
+        <select id="tf-cli"><option value="">—</option>${DATA.clients.map(c=>`<option value="${c.id}" ${(t?.clientId||clientId)===c.id?'selected':''}>${esc(clientLabel(c))}</option>`).join('')}</select></div>
+      <div class="field"><label>Processo</label>
+        <select id="tf-proc"><option value="">—</option>${DATA.processes.map(p=>`<option value="${p.id}" ${(t?.processId||processId)===p.id?'selected':''}>${esc(p.numero||p.tipo)}</option>`).join('')}</select></div>
+    </div>
+    <div class="field"><label>Descrição</label><textarea id="tf-desc">${esc(t?.desc||'')}</textarea></div>
+  `,`
+    ${t?`<button class="btn danger" onclick="delTask('${t.id}')">Excluir</button><span style="flex:1"></span>`:''}
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="saveTask('${id||''}')">Salvar</button>
+  `);
+}
+function saveTask(id){
+  const title=$('#tf-title').value.trim();
+  if(!title){alert('Dê um título à tarefa.');return;}
+  const rec={
+    title,date:$('#tf-date').value||null,isPrazo:$('#tf-prazo').checked,
+    clientId:$('#tf-cli').value||null,processId:$('#tf-proc').value||null,
+    desc:$('#tf-desc').value.trim()
+  };
+  if(id){Object.assign(DATA.tasks.find(x=>x.id===id),rec);}
+  else{DATA.tasks.push({id:uid(),done:false,...rec});}
+  save();closeModal();render();
+}
+function delTask(id){
+  if(!confirmDel('Excluir esta tarefa?'))return;
+  DATA.tasks=DATA.tasks.filter(t=>t.id!==id);
+  save();closeModal();render();
+}
+
+/* =====================================================
+   AGENDA (mês)
+   ===================================================== */
+let agendaDate=new Date();
+function renderAgenda(v){
+  const y=agendaDate.getFullYear(),m=agendaDate.getMonth();
+  const first=new Date(y,m,1);
+  const gridStart=new Date(first);gridStart.setDate(1-first.getDay());
+  let cells='';
+  for(let i=0;i<42;i++){
+    const d=new Date(gridStart);d.setDate(d.getDate()+i);
+    const ds=dstr(d);
+    const inMonth=d.getMonth()===m;
+    const tasks=DATA.tasks.filter(t=>t.date===ds);
+    cells+=`<div class="mg-cell${inMonth?'':' other'}${ds===todayStr()?' todaycell':''}" ondragover="dayDragOver(event)" ondragleave="this.classList.remove('dragover')" ondrop="dayDrop(event)" data-date="${ds}">
+      <div class="n">${d.getDate()}</div>
+      ${tasks.map(t=>`<div class="mg-task${t.isPrazo?' prazo':''}${t.done?' done':''}" draggable="true" ondragstart="taskDragStart(event,'${t.id}')" onclick="taskForm('${t.id}')" title="${esc(t.title)}">${esc(t.title)}</div>`).join('')}
+      <div class="mg-task" style="background:none;color:var(--muted);cursor:pointer" onclick="taskForm(null,'${ds}')">＋</div>
+    </div>`;
+  }
+  v.innerHTML=`
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <div class="row">
+      <button class="btn" onclick="agendaDate=new Date(${y},${m-1},1);render()">‹</button>
+      <b style="font-size:16px;min-width:170px;text-align:center">${MONTHS[m]} ${y}</b>
+      <button class="btn" onclick="agendaDate=new Date(${y},${m+1},1);render()">›</button>
+      <button class="btn" onclick="agendaDate=new Date();render()">Hoje</button>
+    </div>
+    <button class="btn primary" onclick="taskForm()">+ Nova tarefa</button>
+  </div>
+  <div class="card" style="overflow:hidden">
+    <div class="month-grid">
+      ${WEEKDAYS.map(w=>`<div class="mg-h">${w}</div>`).join('')}
+      ${cells}
+    </div>
+  </div>
+  <div class="muted" style="font-size:12px;margin-top:8px">💡 Arraste tarefas entre os dias para reagendar. Vermelho = prazos.</div>`;
+}
+
+/* =====================================================
+   CONFIGURAÇÕES
+   ===================================================== */
+function renderSettings(v){
+  const s=DATA.settings;
+  v.innerHTML=`
+  <div class="grid2" style="gap:18px;align-items:start">
+    <div class="card"><div class="card-h">🏛️ Identidade do escritório</div><div class="card-b">
+      <div class="field"><label>Nome do escritório</label><input id="st-name" value="${esc(s.officeName)}"></div>
+      <div class="field"><label>Subtítulo (ex.: Advocacia Tributária)</label><input id="st-sub" value="${esc(s.officeSub||'')}"></div>
+      <div class="field"><label>Logo do escritório (aparece na capa, no menu e nos relatórios PDF)</label><input type="file" id="st-logo" accept="image/*"></div>
+      ${s.logo?`<div class="row" style="margin-bottom:10px"><img src="${s.logo}" style="max-height:52px;border-radius:8px"><button class="btn small danger" onclick="DATA.settings.logo=null;save();render()">Remover logo</button></div>`:''}
+      <div class="field"><label>Imagem de capa do dashboard</label><input type="file" id="st-cover" accept="image/*"></div>
+      ${s.cover?`<div class="row" style="margin-bottom:10px"><img src="${s.cover}" style="max-height:52px;border-radius:8px"><button class="btn small danger" onclick="DATA.settings.cover=null;save();render()">Remover capa</button></div>`:''}
+      <div class="field"><label>Seu nome</label><input id="st-uname" value="${esc(s.userName||'')}"></div>
+      <div class="field"><label>Seu e-mail</label><input id="st-uemail" value="${esc(s.userEmail||'')}"></div>
+    </div></div>
+    <div>
+      <div class="card" style="margin-bottom:18px"><div class="card-h">🕗 Expediente (barra do dia)</div><div class="card-b">
+        <div class="grid2">
+          <div class="field"><label>Entrada</label><input type="time" id="st-ws" value="${s.workStart}"></div>
+          <div class="field"><label>Saída</label><input type="time" id="st-we" value="${s.workEnd}"></div>
+          <div class="field"><label>Início do almoço</label><input type="time" id="st-ls" value="${s.lunchStart}"></div>
+          <div class="field"><label>Fim do almoço</label><input type="time" id="st-le" value="${s.lunchEnd}"></div>
+        </div>
+      </div></div>
+      <div class="card" style="margin-bottom:18px"><div class="card-h">🍅 Pomodoro</div><div class="card-b">
+        <div class="grid2">
+          <div class="field"><label>Minutos de foco</label><input type="number" id="st-pw" min="5" max="90" value="${s.pomoWork}"></div>
+          <div class="field"><label>Minutos de pausa</label><input type="number" id="st-pb" min="1" max="30" value="${s.pomoBreak}"></div>
+        </div>
+      </div></div>
+      <div class="card"><div class="card-h">💾 Backup dos dados</div><div class="card-b">
+        <p class="muted" style="font-size:12.5px;margin-bottom:10px">Os dados ficam salvos apenas neste navegador. Baixe um backup regularmente e guarde no seu computador ou Drive.</p>
+        <div class="row">
+          <button class="btn" onclick="exportBackup()">⬇ Baixar backup (.json)</button>
+          <label class="btn" style="margin:0;text-transform:none;letter-spacing:0">⬆ Restaurar backup<input type="file" accept=".json" style="display:none" onchange="importBackup(this)"></label>
+        </div>
+        <p class="muted" style="font-size:11.5px;margin-top:10px">O backup inclui clientes, processos, tarefas e configurações (arquivos anexados não são incluídos).</p>
+      </div></div>
+    </div>
+  </div>
+  <div style="margin-top:18px;text-align:right"><button class="btn primary" onclick="saveSettings()">Salvar configurações</button></div>
+  <div class="card" style="margin-top:18px"><div class="card-h">🔗 Google (em breve)</div><div class="card-b muted" style="font-size:12.5px">
+    O login com Google e as integrações com Drive, Gmail, Calendar e Meet funcionam apenas quando o sistema estiver publicado na internet (ex.: GitHub Pages). A estrutura já está pronta — quando você publicar, me peça para ativar essa etapa.
+  </div></div>`;
+}
+function saveSettings(){
+  const s=DATA.settings;
+  s.officeName=$('#st-name').value.trim()||'Meu Escritório';
+  s.officeSub=$('#st-sub').value.trim();
+  s.userName=$('#st-uname').value.trim();
+  s.userEmail=$('#st-uemail').value.trim();
+  s.workStart=$('#st-ws').value||'08:00';s.workEnd=$('#st-we').value||'17:00';
+  s.lunchStart=$('#st-ls').value||'12:00';s.lunchEnd=$('#st-le').value||'13:00';
+  s.pomoWork=Math.max(5,parseInt($('#st-pw').value)||25);
+  s.pomoBreak=Math.max(1,parseInt($('#st-pb').value)||5);
+  const lf=$('#st-logo').files[0],cf=$('#st-cover').files[0];
+  const done=()=>{save();pomoReset();render();};
+  if(lf)readImg(lf,400,d=>{s.logo=d;if(cf)readImg(cf,1400,d2=>{s.cover=d2;done();});else done();});
+  else if(cf)readImg(cf,1400,d=>{s.cover=d;done();});
+  else done();
+}
+function exportBackup(){
+  const data={...DATA};
+  const blob=new Blob([JSON.stringify(data,null,1)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='backup-jurisflow-'+todayStr()+'.json';
+  a.click();
+}
+function importBackup(input){
+  const f=input.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const d=JSON.parse(rd.result);
+      if(!d.settings||!Array.isArray(d.clients))throw new Error('formato');
+      if(!confirm('Restaurar este backup? Os dados atuais serão substituídos.'))return;
+      DATA=d;save();location.reload();
+    }catch(e){alert('Arquivo de backup inválido.');}
+  };
+  rd.readAsText(f);
+}
+
+/* =====================================================
+   BUSCA GLOBAL e + NOVO
+   ===================================================== */
+$('#global-search').addEventListener('input',function(){
+  const q=this.value.trim().toLowerCase();
+  if(!q)return;
+});
+$('#global-search').addEventListener('keydown',function(e){
+  if(e.key!=='Enter')return;
+  const q=this.value.trim().toLowerCase();if(!q)return;
+  const results=[];
+  DATA.clients.forEach(c=>{if((c.nome+' '+(c.fantasia||'')+' '+(c.doc||'')).toLowerCase().includes(q))results.push({t:'Cliente',l:clientLabel(c),go:`nav('client','${c.id}')`});});
+  DATA.processes.forEach(p=>{if((p.numero+' '+p.poloAtivo+' '+p.poloPassivo+' '+p.tipo+' '+(p.juizo||'')).toLowerCase().includes(q))results.push({t:'Processo',l:(p.numero||p.tipo)+' — '+p.poloAtivo,go:`nav('proc','${p.id}')`});});
+  DATA.tasks.forEach(t=>{if((t.title+' '+(t.desc||'')).toLowerCase().includes(q))results.push({t:'Tarefa',l:t.title,go:`closeModal();taskForm('${t.id}')`});});
+  openModal(`Resultados para “${esc(q)}”`,
+    results.length?results.map(r=>`<div class="prazo-item" onclick="closeModal();${r.go}">
+      <span class="chip" style="background:var(--accent)">${r.t}</span><span class="p-tit">${esc(r.l)}</span></div>`).join('')
+    :'<div class="empty">Nada encontrado.</div>');
+});
+$('#quick-add').addEventListener('click',()=>{
+  openModal('O que deseja criar?',`
+    <div style="display:grid;gap:10px">
+      <button class="btn" style="justify-content:flex-start;padding:13px" onclick="closeModal();taskForm()">☑️ &nbsp;Nova tarefa</button>
+      <button class="btn" style="justify-content:flex-start;padding:13px" onclick="closeModal();procForm()">⚖️ &nbsp;Novo processo</button>
+      <button class="btn" style="justify-content:flex-start;padding:13px" onclick="closeModal();clientForm()">👤 &nbsp;Novo cliente</button>
+    </div>`);
+});
+
+/* =====================================================
+   TOAST (notificações rápidas)
+   ===================================================== */
+function showToast(msg, type, duration){
+  const root=$('#toast-root');
+  const t=document.createElement('div');
+  t.className='toast'+(type?' '+type:'');
+  t.innerHTML=msg;
+  root.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(10px)';t.style.transition='all .3s';setTimeout(()=>t.remove(),320);},(duration||3500));
+}
+
+/* =====================================================
+   SALAS DE VOZ (Jitsi)
+   ===================================================== */
+
+const STATUS_OPTIONS=[
+  {code:'online', label:'Online',       dot:'🟢', cls:'online'},
+  {code:'busy',   label:'Ocupado(a)',   dot:'🔴', cls:'busy'},
+  {code:'lunch',  label:'Almoço',       dot:'🟡', cls:'lunch'},
+  {code:'away',   label:'Fora do expediente', dot:'⚫', cls:'away'},
+];
+
+function renderTopbarStatus(){
+  const el=$('#topbar-status');if(!el)return;
+  const st=DATA.myStatus||{code:'online',label:'Online'};
+  const opt=STATUS_OPTIONS.find(o=>o.code===st.code)||STATUS_OPTIONS[0];
+  el.innerHTML=`<span class="status-pill ${opt.cls}">${opt.dot} ${opt.label}</span>`;
+}
+
+function setMyStatus(code){
+  const opt=STATUS_OPTIONS.find(o=>o.code===code)||STATUS_OPTIONS[0];
+  DATA.myStatus={code:opt.code,label:opt.label,since:new Date().toISOString()};
+  save();renderTopbarStatus();
+  showToast(`Status: ${opt.dot} ${opt.label}`);
+  closeModal();
+}
+
+/** Gera URL única por escritório + sala (todos que usam o mesmo link entram na mesma sala) */
+function jitsiUrl(room){
+  const office=(DATA.settings.officeName||'JurisFlow').replace(/[^a-zA-Z0-9]/g,'');
+  const sala=(room.name||'Geral').replace(/[^a-zA-Z0-9]/g,'');
+  return `https://meet.jit.si/JurisFlow-${office}-${sala}`;
+}
+
+function entrarSala(id){
+  const room=DATA.rooms.find(r=>r.id===id);if(!room)return;
+  const url=jitsiUrl(room);
+  // Muda status para "Online" automaticamente se estava "Fora do expediente"
+  if(DATA.myStatus?.code==='away')setMyStatus('online');
+  window.open(url,'_blank','noopener');
+  showToast(`${room.emoji} Abrindo sala "${room.name}"… aguarde carregar no navegador.`,'success',4000);
+}
+
+function copiarLinkSala(id){
+  const room=DATA.rooms.find(r=>r.id===id);if(!room)return;
+  const url=jitsiUrl(room);
+  navigator.clipboard.writeText(url).then(()=>showToast('🔗 Link copiado! Cole no WhatsApp ou e-mail.','success')).catch(()=>{
+    openModal('Link da sala',`<div class="field"><label>Copie este link e envie para a equipe</label><input value="${esc(url)}" onclick="this.select()" readonly></div>`);
+  });
+}
+
+function renderRooms(v){
+  renderTopbarStatus();
+  const st=DATA.myStatus||{code:'online',label:'Online'};
+  const opt=STATUS_OPTIONS.find(o=>o.code===st.code)||STATUS_OPTIONS[0];
+  const since=st.since?` desde ${new Date(st.since).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:'';
+  v.innerHTML=`
+  <div class="jitsi-note">
+    💡 <b>Como funciona:</b> Ao clicar em "Entrar", o Jitsi Meet abre no navegador — sem instalar nada, sem conta.
+    Qualquer pessoa com o link da sala entra com você. Microfone e câmera são controlados dentro do Jitsi.
+    O link de cada sala é permanente e exclusivo deste escritório — compartilhe com a equipe.
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-h">Meu status atual</div>
+    <div class="card-b">
+      <div class="status-legend">
+        ${STATUS_OPTIONS.map(o=>`<button class="status-pill ${o.cls}${st.code===o.code?' ':' '}" style="opacity:${st.code===o.code?'1':'.55'}" onclick="setMyStatus('${o.code}')">${o.dot} ${o.label}</button>`).join('')}
+      </div>
+      <div class="muted" style="font-size:12px">Status atual: <b>${opt.dot} ${opt.label}</b>${since} — visível para você; quando o sistema for publicado online, toda a equipe verá.</div>
+    </div>
+  </div>
+
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <b style="font-size:15px">Salas (${DATA.rooms.length})</b>
+    <button class="btn primary" onclick="roomForm()">+ Nova sala</button>
+  </div>
+  <div class="room-grid">
+    ${DATA.rooms.map(room=>{
+      const url=jitsiUrl(room);
+      return `<div class="room-card">
+        <div class="rc-top">
+          <div class="rc-emoji">${esc(room.emoji||'💬')}</div>
+          <div class="rc-info"><b>${esc(room.name)}</b><small>${esc(room.desc||'')}</small></div>
+          <button class="btn icon" onclick="roomForm('${room.id}')" title="Editar">✎</button>
+        </div>
+        <div class="rc-body">
+          <div class="muted" style="font-size:11.5px;word-break:break-all">${esc(url)}</div>
+        </div>
+        <div class="rc-foot">
+          <button class="btn primary" style="flex:1" onclick="entrarSala('${room.id}')">🎙 Entrar na sala</button>
+          <button class="btn" onclick="copiarLinkSala('${room.id}')" title="Copiar link para enviar à equipe">🔗</button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>
+
+  <div class="card" style="margin-top:24px">
+    <div class="card-h">📋 Como compartilhar as salas com a equipe</div>
+    <div class="card-b" style="font-size:13px;line-height:1.7">
+      <b>Passo 1</b> — Clique em 🔗 ao lado de uma sala para copiar o link permanente.<br>
+      <b>Passo 2</b> — Envie o link pelo WhatsApp, e-mail ou fixe no grupo da equipe.<br>
+      <b>Passo 3</b> — Todos que abrirem o mesmo link entram na mesma sala de voz, sem precisar de conta.<br>
+      <b>Passo 4</b> — Dentro do Jitsi, cada um controla seu microfone e câmera individualmente.<br><br>
+      <span class="muted">💡 Dica: crie uma sala para cada setor do escritório — ao entrar na sala do setor, todos do setor ficam conectados, como numa bancada aberta de home office.</span>
+    </div>
+  </div>`;
+}
+
+function roomForm(id){
+  const room=id?DATA.rooms.find(r=>r.id===id):null;
+  const EMOJIS=['💬','⚖️','🏛️','📋','💼','🔍','📞','☕','🎯','📁'];
+  openModal(room?'Editar sala':'Nova sala',`
+    <div class="grid2">
+      <div class="field"><label>Nome da sala</label><input id="rf-name" value="${esc(room?.name||'')}" placeholder="Ex.: Setor Tributário"></div>
+      <div class="field"><label>Emoji</label>
+        <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:4px">
+          ${EMOJIS.map(e=>`<button type="button" style="font-size:20px;border:1.5px solid ${room?.emoji===e?'var(--accent)':'var(--border)'};border-radius:8px;padding:4px 7px;background:#fff" onclick="selectRoomEmoji(this,'${e}')" data-emoji="${e}">${e}</button>`).join('')}
+        </div>
+        <input type="hidden" id="rf-emoji" value="${esc(room?.emoji||'💬')}">
+      </div>
+    </div>
+    <div class="field"><label>Descrição</label><input id="rf-desc" value="${esc(room?.desc||'')}" placeholder="Ex.: Reuniões e plenário do setor tributário"></div>
+    <div class="field" style="background:var(--bg);padding:10px;border-radius:8px;font-size:12.5px">
+      <b>Link que será gerado:</b><br>
+      <span class="muted" id="rf-preview">${room?esc(jitsiUrl(room)):'Preencha o nome acima'}</span>
+    </div>
+  `,`
+    ${room?`<button class="btn danger" onclick="delRoom('${room.id}')">Excluir</button><span style="flex:1"></span>`:''}
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="saveRoom('${id||''}')">Salvar</button>
+  `);
+  // Atualiza preview em tempo real
+  $('#rf-name').addEventListener('input',()=>{
+    const n=$('#rf-name').value.trim();
+    const office=(DATA.settings.officeName||'JurisFlow').replace(/[^a-zA-Z0-9]/g,'');
+    const sala=(n||'Sala').replace(/[^a-zA-Z0-9]/g,'');
+    $('#rf-preview').textContent=`https://meet.jit.si/JurisFlow-${office}-${sala}`;
+  });
+}
+function selectRoomEmoji(btn,e){
+  document.querySelectorAll('#modal-root [data-emoji]').forEach(b=>b.style.borderColor='var(--border)');
+  btn.style.borderColor='var(--accent)';
+  $('#rf-emoji').value=e;
+}
+function saveRoom(id){
+  const name=$('#rf-name').value.trim();if(!name){alert('Dê um nome à sala.');return;}
+  const rec={name,emoji:$('#rf-emoji').value||'💬',desc:$('#rf-desc').value.trim()};
+  if(id){Object.assign(DATA.rooms.find(r=>r.id===id),rec);}
+  else{DATA.rooms.push({id:uid(),...rec});}
+  save();closeModal();render();
+}
+function delRoom(id){
+  if(!confirmDel('Excluir esta sala? O link deixará de aparecer no sistema (o Jitsi em si não é afetado).'))return;
+  DATA.rooms=DATA.rooms.filter(r=>r.id!==id);
+  save();closeModal();render();
+}
+
+/* =====================================================
+   DATAJUD — funções do frontend
+   ===================================================== */
+
+/** Verifica se o backend está rodando antes de fazer chamadas */
+async function checkBackend(){
+  try{
+    const r=await fetch(`${API_BASE}/api/ping`,{signal:AbortSignal.timeout(4000)});
+    return r.ok;
+  }catch(e){return false;}
+}
+
+/**
+ * buscaDataJud()
+ * Chamada pelo botão 🔍 no formulário de processo.
+ * Consulta o backend → preenche todos os campos automaticamente.
+ */
+async function buscaDataJud(){
+  const numero=($('#pf-num').value||'').trim();
+  if(!numero){showToast('⚠️ Informe o número CNJ antes de buscar.','warn');return;}
+  const btn=$('#pf-buscar'),status=$('#pf-dj-status');
+  btn.disabled=true;btn.innerHTML='<i class="spin">⏳</i> Consultando…';
+  status.textContent='';
+  const online=await checkBackend();
+  if(!online){
+    btn.disabled=false;btn.innerHTML='🔍 Buscar no DataJud';
+    status.innerHTML='<b style="color:var(--red)">Backend não encontrado.</b> Abra o arquivo <b>iniciar-backend.bat</b> primeiro, depois tente novamente.';
+    return;
+  }
+  try{
+    const r=await fetch(`${API_BASE}/api/processo/${encodeURIComponent(numero)}`);
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.erro||`Erro ${r.status}`);
+    preencherFormularioComDJ(data);
+    status.innerHTML=`<span style="color:var(--green)">✔ Dados preenchidos automaticamente com base no DataJud.</span>`;
+    showToast('✔ Processo encontrado e preenchido!','success');
+  }catch(e){
+    status.innerHTML=`<span style="color:var(--red)">✘ ${esc(e.message)}</span>`;
+    showToast('✘ '+e.message,'error');
+  }finally{btn.disabled=false;btn.innerHTML='🔍 Buscar no DataJud';}
+}
+
+/** Preenche os campos do formulário com os dados vindos do backend */
+function preencherFormularioComDJ(d){
+  if(d.numero)$('#pf-num').value=d.numero;
+  if(d.tribunal)$('#pf-tribunal').value=d.tribunal;
+  if(d.orgaoJulgador)$('#pf-juizo').value=d.orgaoJulgador+(d.municipio?' — '+d.municipio:'');
+  if(d.valorCausa)$('#pf-valor').value=d.valorCausa;
+  if(d.distribuicao)$('#pf-dist').value=d.distribuicao;
+  if(d.assunto)$('#pf-assunto').value=d.assunto;
+  // Polo ativo = primeiro "Ativo", polo passivo = primeiro "Passivo"
+  const ativo=(d.partes||[]).find(p=>p.tipo==='Ativo');
+  const passivo=(d.partes||[]).find(p=>p.tipo==='Passivo');
+  if(ativo&&!$('#pf-ativo').value)$('#pf-ativo').value=ativo.nome;
+  if(passivo&&!$('#pf-passivo').value)$('#pf-passivo').value=passivo.nome;
+  // Infere tipo pelo campo "classe" da API
+  if(d.classe){
+    const low=d.classe.toLowerCase();
+    let tipoMatch=DATA.procTypes.find(t=>low.includes(t.toLowerCase()));
+    if(!tipoMatch){
+      DATA.procTypes.push(d.classe);
+      tipoMatch=d.classe;
+    }
+    const sel=$('#pf-tipo');
+    if(sel){[...sel.options].forEach(o=>{if(o.value===tipoMatch||o.text===tipoMatch)o.selected=true;});}
+  }
+  // Observações: lista de partes completa
+  const partesTexto=(d.partes||[]).map(p=>`${p.tipo}: ${p.nome}`).join('\n');
+  if(partesTexto&&!$('#pf-obs').value)$('#pf-obs').value=partesTexto;
+}
+
+/**
+ * sincronizarMovimentacoes(procId, showAlert)
+ * Consulta o DataJud, importa movimentações novas e descarta duplicadas.
+ * showAlert=true → mostra toast/resultado ao usuário
+ * showAlert=false → silencioso (usado no auto-sync de 24h)
+ */
+async function sincronizarMovimentacoes(procId, showAlert){
+  const p=getProc(procId);
+  if(!p||!p.numero)return;
+  const btnId='btn-sync-'+procId;
+  const btn=$(('#'+btnId));
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="spin">⏳</i> Atualizando…';}
+  if(showAlert)showToast('<i class="spin">⏳</i> Consultando DataJud…');
+  const online=await checkBackend();
+  if(!online){
+    if(btn){btn.disabled=false;btn.innerHTML='🔄 Atualizar Processo';}
+    if(showAlert)showToast('Backend não encontrado. Abra o iniciar-backend.bat.','error');
+    return;
+  }
+  try{
+    const r=await fetch(`${API_BASE}/api/processo/${encodeURIComponent(p.numero)}`);
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.erro||`Erro ${r.status}`);
+    const novas=importarMovimentacoes(p,data.movimentos||[]);
+    // Atualiza campos que podem ter mudado (vara, valor…)
+    if(data.orgaoJulgador&&!p.juizo)p.juizo=data.orgaoJulgador+(data.municipio?' — '+data.municipio:'');
+    if(data.valorCausa&&!p.valor)p.valor=data.valorCausa;
+    if(data.tribunal&&!p.tribunal)p.tribunal=data.tribunal;
+    if(data.assunto&&!p.assunto)p.assunto=data.assunto;
+    if(data.distribuicao&&!p.distribuicao)p.distribuicao=data.distribuicao;
+    p.lastSync=new Date().toISOString();
+    save();
+    if(showAlert){
+      if(novas>0){showToast(`✔ ${novas} nova${novas>1?'s':''} movimentaç${novas>1?'ões':'ão'} importada${novas>1?'s':''}!`,'success');}
+      else{showToast('Processo já está atualizado — nenhuma novidade no DataJud.','');}
+    }
+    if(route.page==='proc'&&route.id===procId)render();
+  }catch(e){
+    if(showAlert)showToast('✘ '+e.message,'error');
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='🔄 Atualizar Processo';}
+  }
+}
+
+/**
+ * importarMovimentacoes(p, movsDataJud)
+ * Adiciona somente movimentações novas (sem duplicar).
+ * Chave de deduplicação: data + tipo (normalizado).
+ * Retorna quantidade de novas importadas.
+ */
+function importarMovimentacoes(p, movsDataJud){
+  const existentes=new Set(
+    (p.movs||[]).map(m=>(m.date||'')+'|'+(m.tipo||'').trim().toLowerCase())
+  );
+  let novas=0;
+  // Ordena cronologicamente (mais antigas primeiro)
+  const sorted=[...movsDataJud].filter(m=>m.date).sort((a,b)=>a.date.localeCompare(b.date));
+  for(const m of sorted){
+    const key=(m.date||'')+'|'+(m.tipo||'').trim().toLowerCase();
+    if(!existentes.has(key)){
+      p.movs.push({id:uid(),date:m.date,tipo:m.tipo||'Movimento',desc:m.desc||''});
+      existentes.add(key);
+      novas++;
+    }
+  }
+  return novas;
+}
+
+/**
+ * atualizarTodos()
+ * Percorre todos os processos com número CNJ e sincroniza um por um.
+ * Exibe progresso em modal.
+ */
+async function atualizarTodos(){
+  const alvo=DATA.processes.filter(p=>p.numero);
+  if(!alvo.length){showToast('Nenhum processo com número CNJ cadastrado.','warn');return;}
+  const online=await checkBackend();
+  if(!online){showToast('Backend não encontrado. Abra o iniciar-backend.bat primeiro.','error');return;}
+  let ok=0,novos=0,erros=0,atual=0;
+  openModal('🔄 Atualizar todos os processos',`
+    <div id="lote-prog" style="text-align:center;padding:12px">
+      <div style="font-size:14px;margin-bottom:8px">Atualizando <b>${alvo.length}</b> processo(s)…</div>
+      <div id="lote-bar-wrap" style="background:var(--bg);border-radius:8px;height:12px;overflow:hidden"><div id="lote-bar" style="width:0%;height:100%;background:var(--accent);transition:width .3s"></div></div>
+      <div id="lote-txt" class="muted" style="font-size:12px;margin-top:6px">Aguarde…</div>
+    </div>`,'');
+  for(const p of alvo){
+    atual++;
+    const pct=Math.round((atual/alvo.length)*100);
+    const barEl=$('#lote-bar');const txtEl=$('#lote-txt');
+    if(barEl)barEl.style.width=pct+'%';
+    if(txtEl)txtEl.textContent=`(${atual}/${alvo.length}) ${p.numero||p.tipo}`;
+    try{
+      const r=await fetch(`${API_BASE}/api/processo/${encodeURIComponent(p.numero)}`);
+      const data=await r.json();
+      if(!r.ok)throw new Error(data.erro||`Erro ${r.status}`);
+      const qtd=importarMovimentacoes(p,data.movimentos||[]);
+      if(data.tribunal&&!p.tribunal)p.tribunal=data.tribunal;
+      if(data.assunto&&!p.assunto)p.assunto=data.assunto;
+      if(data.valorCausa&&!p.valor)p.valor=data.valorCausa;
+      if(data.distribuicao&&!p.distribuicao)p.distribuicao=data.distribuicao;
+      if(data.orgaoJulgador&&!p.juizo)p.juizo=data.orgaoJulgador;
+      p.lastSync=new Date().toISOString();
+      novos+=qtd;ok++;
+    }catch(e){erros++;}
+    save();
+    // Pequena pausa entre requisições para não sobrecarregar o DataJud
+    await new Promise(res=>setTimeout(res,400));
+  }
+  const progEl=$('#lote-prog');
+  if(progEl)progEl.innerHTML=`<div style="font-size:14px;font-weight:700;margin-bottom:8px">Concluído!</div>
+    <div class="muted" style="font-size:13px">${ok} processo(s) consultado(s) · <b>${novos}</b> nova(s) movimentação(ões) importada(s) · ${erros} erro(s)</div>`;
+  save();render();
+}
+
+/**
+ * Auto-sync: ao abrir um processo, verifica se faz mais de 24h
+ * desde a última sincronização e consulta silenciosamente.
+ */
+function deveAutoSync(p){
+  if(!p.numero)return false;
+  if(!p.lastSync)return true;
+  const horas=(Date.now()-new Date(p.lastSync).getTime())/3600000;
+  return horas>=24;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SALAS DE VOZ EMBUTIDAS — WebRTC + Socket.IO
+   O áudio vai peer-to-peer (STUN); o servidor só faz sinalização.
+   Funciona apenas quando o backend está rodando em http://localhost:3000
+   ══════════════════════════════════════════════════════════════════════════ */
+
+function initVoice(){
+  if(window._voiceInitDone||window._voiceScriptLoading)return;
+  window._voiceScriptLoading=true;
+  const s=document.createElement('script');
+  s.src=`${API_BASE}/socket.io/socket.io.js`;
+  s.onload=()=>{
+    window._voiceInitDone=true;
+    connectVoiceSocket();
+  };
+  s.onerror=()=>{
+    window._voiceScriptLoading=false; // allow retry next time
+    renderVoiceSidebar();
+  };
+  document.head.appendChild(s);
+}
+
+function connectVoiceSocket(){
+  if(voiceSocket?.connected)return;
+  // io() is provided by socket.io.js loaded above
+  voiceSocket=window.io(API_BASE,{transports:['websocket','polling'],reconnectionDelay:3000});
+
+  voiceSocket.on('connect',()=>{
+    voiceSocket.emit('get-rooms-info');
+    renderVoiceSidebar();
+  });
+
+  voiceSocket.on('disconnect',()=>{
+    _voiceCleanup();
+    renderVoiceSidebar();
+  });
+
+  voiceSocket.on('rooms-info',info=>{
+    roomsInfo=info||{};
+    renderVoiceSidebar();
+  });
+
+  voiceSocket.on('room-update',({roomId,participants})=>{
+    if(!roomsInfo[roomId])roomsInfo[roomId]={};
+    roomsInfo[roomId].participants=participants;
+    roomsInfo[roomId].count=Object.keys(participants).length;
+    renderVoiceSidebar();
+  });
+
+  voiceSocket.on('room-joined',async({roomId,peers,participants})=>{
+    connectedRoomId=roomId;
+    roomsInfo[roomId]={participants:participants||{},count:Object.keys(participants||{}).length};
+    // Para cada peer já na sala, nós (recém-chegado) criamos a oferta
+    for(const peerId of (peers||[])){
+      const pc=_createPeerConn(peerId);
+      const offer=await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      voiceSocket.emit('signal',{to:peerId,data:{type:'offer',sdp:offer.sdp}});
+    }
+    renderVoiceSidebar();
+  });
+
+  voiceSocket.on('signal',async({from,data})=>{
+    let pc=voicePeers[from];
+    if(data.type==='offer'){
+      if(!pc)pc=_createPeerConn(from);
+      await pc.setRemoteDescription({type:'offer',sdp:data.sdp});
+      const answer=await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      voiceSocket.emit('signal',{to:from,data:{type:'answer',sdp:answer.sdp}});
+    }else if(data.type==='answer'){
+      if(pc)await pc.setRemoteDescription({type:'answer',sdp:data.sdp}).catch(()=>{});
+    }else if(data.candidate){
+      if(pc)pc.addIceCandidate(data.candidate).catch(()=>{});
+    }
+  });
+
+  voiceSocket.on('peer-left',peerId=>{
+    if(voicePeers[peerId]){voicePeers[peerId].close();delete voicePeers[peerId];}
+    const el=document.getElementById(`vs-audio-${peerId}`);if(el)el.remove();
+    renderVoiceSidebar();
+  });
+}
+
+function _createPeerConn(peerId){
+  const pc=new RTCPeerConnection({iceServers:STUN_SERVERS});
+  voicePeers[peerId]=pc;
+  // Adiciona trilhas do mic local
+  if(localStream)localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+  // Envia candidatos ICE
+  pc.onicecandidate=({candidate})=>{
+    if(candidate&&voiceSocket)voiceSocket.emit('signal',{to:peerId,data:{candidate}});
+  };
+  // Reproduz áudio remoto
+  pc.ontrack=({streams})=>{
+    const stream=streams&&streams[0];if(!stream)return;
+    let audio=document.getElementById(`vs-audio-${peerId}`);
+    if(!audio){audio=document.createElement('audio');audio.id=`vs-audio-${peerId}`;audio.autoplay=true;document.body.appendChild(audio);}
+    audio.srcObject=stream;
+    audio.muted=!audioOn;
+  };
+  return pc;
+}
+
+function _voiceCleanup(){
+  if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}
+  Object.values(voicePeers).forEach(pc=>pc.close());
+  voicePeers={};
+  document.querySelectorAll('[id^="vs-audio-"]').forEach(el=>el.remove());
+  connectedRoomId=null;
+}
+
+async function joinVoiceRoom(roomId){
+  // Segundo clique na sala conectada = sair
+  if(connectedRoomId===roomId){leaveVoiceRoom();return;}
+
+  if(!voiceSocket?.connected){
+    showToast('⚡ Backend offline. Abra iniciar-backend.bat primeiro e acesse http://localhost:3000','warn',6000);
+    return;
+  }
+
+  // Pede permissão do microfone
+  try{
+    localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    micOn=true;audioOn=true;
+  }catch(e){
+    showToast('🎙 Permissão de microfone negada. Clique no cadeado na barra do navegador e permita o microfone.','error',6000);
+    return;
+  }
+
+  // Sai de sala anterior se estiver em uma
+  if(connectedRoomId)leaveVoiceRoom(false);
+
+  const name=DATA.settings.userName||DATA.settings.officeName||'Usuário';
+  voiceSocket.emit('join-room',{roomId,name});
+  if(DATA.myStatus?.code==='away')setMyStatus('online');
+}
+
+function leaveVoiceRoom(repaint=true){
+  if(!connectedRoomId)return;
+  voiceSocket?.emit('leave-room');
+  _voiceCleanup();
+  if(repaint)renderVoiceSidebar();
+}
+
+function toggleVoiceMic(){
+  micOn=!micOn;
+  if(localStream)localStream.getAudioTracks().forEach(t=>t.enabled=micOn);
+  voiceSocket?.emit('update-status',{muted:!micOn,deafened:!audioOn});
+  renderVoiceSidebar();
+}
+
+function toggleVoiceAudio(){
+  audioOn=!audioOn;
+  document.querySelectorAll('[id^="vs-audio-"]').forEach(el=>{el.muted=!audioOn;});
+  voiceSocket?.emit('update-status',{muted:!micOn,deafened:!audioOn});
+  renderVoiceSidebar();
+}
+
+function renderVoiceSidebar(){
+  const el=document.getElementById('voice-sidebar');
+  if(!el)return;
+
+  const online=!!(window._voiceInitDone&&voiceSocket?.connected);
+
+  if(!window._voiceInitDone){
+    el.innerHTML=`<div class="vs-section-title">🔊 Salas de Voz</div>
+      <div class="vs-offline">Acesse via<br><b>http://localhost:3000</b><br>para usar as salas</div>`;
+    return;
+  }
+  if(!online){
+    el.innerHTML=`<div class="vs-section-title">🔊 Salas de Voz</div>
+      <div class="vs-offline">⚡ Reconectando…</div>`;
+    return;
+  }
+
+  const rooms=DATA.rooms||[];
+  const roomsHtml=rooms.map(r=>{
+    const info=roomsInfo[r.id]||{};
+    const parts=info.participants||{};
+    const cnt=Object.keys(parts).length;
+    const isConn=connectedRoomId===r.id;
+    let partHtml='';
+    if(isConn&&cnt>0){
+      partHtml='<div class="vs-participants">'+Object.values(parts).map(p=>`<div class="vs-participant"><span>👤</span>${esc(p.name)}${p.muted?' 🔇':''}${p.deafened?' 🔕':''}</div>`).join('')+'</div>';
+    }
+    return `<div class="vs-room-item${isConn?' connected':''}" onclick="joinVoiceRoom('${r.id}')">
+      <span class="vs-room-emoji">${r.emoji||'💬'}</span>
+      <span class="vs-room-name">${esc(r.name)}</span>
+      ${cnt?`<span class="vs-room-count">${cnt}</span>`:''}
+    </div>${partHtml}`;
+  }).join('');
+
+  let ctrlHtml='';
+  if(connectedRoomId){
+    const room=DATA.rooms.find(r=>r.id===connectedRoomId);
+    ctrlHtml=`<div class="vs-controls">
+      <span class="vs-ctrl-room">● ${esc(room?.name||'Sala')}</span>
+      <button class="vs-ctrl-btn${micOn?'':' off'}" onclick="toggleVoiceMic()" title="${micOn?'Silenciar':'Ativar mic'}">${micOn?'🎙':'🔇'}</button>
+      <button class="vs-ctrl-btn${audioOn?'':' off'}" onclick="toggleVoiceAudio()" title="${audioOn?'Desativar áudio':'Ativar áudio'}">${audioOn?'🔊':'🔕'}</button>
+      <button class="vs-ctrl-btn off" onclick="leaveVoiceRoom()" title="Sair da sala">🚪</button>
+    </div>`;
+  }
+
+  el.innerHTML=`<div class="vs-section-title">🔊 Salas de Voz</div>${roomsHtml}${ctrlHtml}`;
+}
+
+/* ---------- Início ---------- */
+render();
+renderTopbarStatus();
+initVoice(); // tenta conectar ao backend para as salas de voz
+setInterval(()=>{ // vira o dia à meia-noite
+  if(route.page==='dash')drawDaybar();
+},60000);
+
+</script>
+</body>
+</html>
